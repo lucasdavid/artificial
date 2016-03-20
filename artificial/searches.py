@@ -433,6 +433,8 @@ class HillClimbing(Base):
         super().restart(root=root)
         self.current = root
 
+        return self
+
     def _perform(self):
         stable = False
 
@@ -445,3 +447,5 @@ class HillClimbing(Base):
                 if self.agent.utility(c) > utility:
                     self.current = c
                     stable = False
+
+        return self.current

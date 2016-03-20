@@ -41,7 +41,7 @@ class SpaceTest(TestCase):
 
     def test_h(self):
         s1 = _TestState([1, 2, 3, 4])
-        self.assertEqual(s1.h, 0)
+        self.assertEqual(s1.h(), 0)
 
     def test_f(self):
         expected = 298321
