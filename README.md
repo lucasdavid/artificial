@@ -1,4 +1,4 @@
-# Agents
+# Artificial
 
-Common interface for intelligent agents and basic implementations.
+A basic API for artificially intelligent agents.
 

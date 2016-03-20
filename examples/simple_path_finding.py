@@ -1,4 +1,5 @@
-from artificial.base import Environment, State, agents, searches
+from artificial import searches
+from artificial.base import Environment, State, agents
 
 
 class CityState(State):
@@ -9,6 +10,7 @@ class CityState(State):
     hence, have the same `data` attribute, which is precisely what
     State.__eq__ checks for.
     """
+
     @property
     def is_goal(self):
         return self.data == 3
@@ -45,11 +47,10 @@ class SimplePathFinding(Environment):
                 continue
 
             self.current_state = CityState(next_city)
-
             self.real_cost += self.d[current][next_city]
 
 
-class RouterPlanner(agents.UtilityBasedAgent):
+class RoutePlanner(agents.UtilityBasedAgent):
     def predict(self, state):
         current = state.data
         d, roads = self.environment.d, self.environment.incidence
@@ -69,11 +70,11 @@ def main():
     env = SimplePathFinding(initial_state=CityState(0))
 
     env.agents += [
-        RouterPlanner(environment=env,
-                      search=searches.IterativeDeepeningSearch,
-                      search_params=dict(limit=4),
-                      actions=(0, 1, 2, 3),
-                      verbose=True)
+        RoutePlanner(environment=env,
+                     search=searches.IterativeDeepeningSearch,
+                     search_params=dict(limit=4),
+                     actions=(0, 1, 2, 3),
+                     verbose=True)
     ]
 
     i, max_iterations = 0, 14
