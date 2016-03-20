@@ -2,7 +2,7 @@ import abc
 import copy
 
 
-class State:
+class State(metaclass=abc.ABCMeta):
     """State class.
     
     Keeps track of episodic updates in the environment, maintaining 
@@ -13,11 +13,19 @@ class State:
         self.data = data
         self.parent = parent
         self.action = action
+
         self.g = g
 
     @property
     def is_goal(self):
         raise NotImplementedError
+
+    @property
+    def h(self):
+        return 0
+
+    def f(self):
+        return self.g + self.h
 
     def mitosis(self, parenting=True, **mutation):
         """Nuclear division of current state into a new one.

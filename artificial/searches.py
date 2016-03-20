@@ -1,8 +1,9 @@
 import abc
 import warnings
 
-from artificial.base import agents
 from artificial.base.helpers import PriorityQueue
+
+from artificial import agents
 
 
 class Search(metaclass=abc.ABCMeta):
@@ -155,7 +156,11 @@ class UniformCostSearch(FirstSearch):
 
 class GreedyBestFirstSearch(UniformCostSearch):
     def expand(self, state):
-        raise NotImplementedError
+        self.space.add(state)
+
+        for child in self.agent.predict(state):
+            if child not in self.space and child not in self.fringe:
+                self.fringe.add(child, priority=child.h)
 
 
 class AStar(UniformCostSearch):

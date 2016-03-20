@@ -3,6 +3,14 @@ import heapq
 import itertools
 
 
+class Graph:
+    def __init__(self, nodes, edges=None, directed=False):
+        self.nodes = nodes
+        self.edges = edges or {}
+        self.n_nodes = len(nodes)
+        self.directed = directed
+
+
 class PriorityQueue:
     REMOVED = '<removed-e>'
 

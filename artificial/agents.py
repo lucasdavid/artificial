@@ -199,7 +199,7 @@ class UtilityBasedAgent(GoalBasedAgent, metaclass=abc.ABCMeta):
     """
 
     def utility(self, state):
-        return state.g
+        return -state.g
 
 
 class LearningAgent(Agent, metaclass=abc.ABCMeta):
