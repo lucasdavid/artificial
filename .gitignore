@@ -3,3 +3,4 @@
 *.cache
 bin/
 __pycache__/
+.coverage
