@@ -3,3 +3,6 @@
 *.cache
 bin/
 __pycache__/
+.coverage
+coverage/
+artificial.egg-info/
