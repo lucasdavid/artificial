@@ -17,7 +17,7 @@ class Agent(metaclass=abc.ABCMeta):
 
     """
 
-    def __init__(self, environment, actions, verbose=True):
+    def __init__(self, environment, actions, verbose=False):
         self.environment = environment
         self.actions = actions
         self.verbose = verbose
@@ -45,7 +45,7 @@ class TableDrivenAgent(Agent, metaclass=abc.ABCMeta):
     Basic intelligent agent based table of percepts.
     """
 
-    def __init__(self, action_map, environment, actions, verbose=True):
+    def __init__(self, action_map, environment, actions, verbose=False):
         super().__init__(environment=environment, actions=actions,
                          verbose=verbose)
 
@@ -74,7 +74,7 @@ class SimpleReflexAgent(Agent, metaclass=abc.ABCMeta):
     Basic intelligent agent based on decision rules.
     """
 
-    def __init__(self, rules, environment, actions, verbose=True):
+    def __init__(self, rules, environment, actions, verbose=False):
         super().__init__(environment=environment, actions=actions,
                          verbose=verbose)
 
@@ -113,7 +113,7 @@ class ModelBasedAgent(Agent, metaclass=abc.ABCMeta):
         ```
     """
 
-    def __init__(self, model, environment, actions, verbose=True):
+    def __init__(self, model, environment, actions, verbose=False):
         super().__init__(environment=environment, actions=actions,
                          verbose=verbose)
         self.model = model
@@ -167,7 +167,7 @@ class GoalBasedAgent(Agent, metaclass=abc.ABCMeta):
     """
 
     def __init__(self, search, environment, actions,
-                 search_params=None, verbose=True):
+                 search_params=None, verbose=False):
         super().__init__(environment=environment, actions=actions,
                          verbose=verbose)
 
