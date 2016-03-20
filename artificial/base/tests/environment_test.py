@@ -30,14 +30,37 @@ class SpaceTest(TestCase):
     def test_mitosis(self):
         s1 = _TestState([1, 2, 3, 4])
         s2 = s1.mitosis()
-        
+
         self.assertEqual(s1, s2.parent)
-        
+
         s2.data[0] = -1
         self.assertNotEqual(s1.data[0], s2.data[0])
 
         s2.data[0] = 1
         self.assertListEqual(s1.data, s2.data)
+
+    def test_h(self):
+        s1 = _TestState([1, 2, 3, 4])
+        self.assertEqual(s1.h, 0)
+
+    def test_f(self):
+        expected = 298321
+        s1 = _TestState([1, 2, 3, 4], g=expected)
+        actual = s1.f()
+
+        # f() = g() + h() <=> f() = g()
+        self.assertEqual(actual, expected)
+
+    def test___hash__(self):
+        actual, expected = (hash(_TestState([1, 2, 3, 4])),
+                            hash(str([1, 2, 3, 4])))
+
+        self.assertEqual(actual, expected)
+
+    def test___str__(self):
+        s1 = str(_TestState([10, 20, 1, 5]))
+
+        self.assertTrue(s1)
 
 
 class _LocalTestEnvironment(Environment):

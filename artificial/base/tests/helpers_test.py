@@ -42,6 +42,13 @@ class PriorityQueueTest(TestCase):
 
         self.assertEqual(len(queue), len(self.sample_sequence))
 
+<<<<<<< HEAD
+=======
+        # Test inserting repetitions.
+        [queue.add(entry, p) for entry, p in self.sample_sequence]
+        self.assertEqual(len(queue), len(self.sample_sequence))
+
+>>>>>>> tests
     def test_pop(self):
         queue = PriorityQueue()
         [queue.add(e, p) for e, p in self.sample_sequence]
@@ -53,6 +60,12 @@ class PriorityQueueTest(TestCase):
 
         self.assertEqual(len(queue), 0)
 
+<<<<<<< HEAD
+=======
+        with self.assertRaises(KeyError):
+            queue.pop()
+
+>>>>>>> tests
     def test_remove(self):
         queue = PriorityQueue()
         entries = ('first', 'forth', 'third', 'second')
