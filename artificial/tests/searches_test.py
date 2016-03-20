@@ -21,23 +21,23 @@ class _UtilityTestAgent(agents.UtilityBasedAgent):
 class UniformCostSearchTest(TestCase):
     def test_sanity(self):
         with self.assertRaises(AssertionError):
-            searches.UniformCostSearch(agent=None, root=_TestState(10))
+            searches.UniformCost(agent=None, root=_TestState(10))
 
-        a = _UtilityTestAgent(searches.UniformCostSearch, None, None)
-        s = searches.UniformCostSearch(agent=a, root=_TestState(10))
+        a = _UtilityTestAgent(searches.UniformCost, None, None)
+        s = searches.UniformCost(agent=a, root=_TestState(10))
         self.assertIsNotNone(s)
 
     def test_perform(self):
-        a = _UtilityTestAgent(searches.UniformCostSearch, None, None)
-        s = searches.UniformCostSearch(agent=a).restart(_TestState(10))
+        a = _UtilityTestAgent(searches.UniformCost, None, None)
+        s = searches.UniformCost(agent=a).restart(_TestState(10))
         s.perform()
 
         self.assertTrue(s.solution_candidate.is_goal)
         self.assertTrue(s.solution_path)
 
     def test_solution_path_as_action_list(self):
-        a = _UtilityTestAgent(searches.UniformCostSearch, None, None)
-        s = searches.UniformCostSearch(agent=a, root=_TestState(10))
+        a = _UtilityTestAgent(searches.UniformCost, None, None)
+        s = searches.UniformCost(agent=a, root=_TestState(10))
         actions = s.perform().solution_path_as_action_list()
 
         self.assertListEqual(actions, ['m', 'm', 'm'])
@@ -46,15 +46,15 @@ class UniformCostSearchTest(TestCase):
 class BreadthFirstSearchTest(TestCase):
     def test_sanity(self):
         with self.assertRaises(AssertionError):
-            searches.BreadthFirstSearch(agent=None, root=_TestState(10))
+            searches.BreadthFirst(agent=None, root=_TestState(10))
 
-        a = _UtilityTestAgent(searches.BreadthFirstSearch, None, None)
-        s = searches.BreadthFirstSearch(agent=a, root=_TestState(10))
+        a = _UtilityTestAgent(searches.BreadthFirst, None, None)
+        s = searches.BreadthFirst(agent=a, root=_TestState(10))
         self.assertIsNotNone(s)
 
     def test_perform(self):
-        a = _UtilityTestAgent(searches.BreadthFirstSearch, None, None)
-        s = searches.BreadthFirstSearch(agent=a).restart(_TestState(10))
+        a = _UtilityTestAgent(searches.BreadthFirst, None, None)
+        s = searches.BreadthFirst(agent=a).restart(_TestState(10))
         s.perform()
 
         self.assertTrue(s.solution_candidate.is_goal)
@@ -64,8 +64,8 @@ class BreadthFirstSearchTest(TestCase):
         self.assertEqual(len(s.space) + len(s.fringe), 9 - 3)
 
     def test_solution_path_as_action_list(self):
-        a = _UtilityTestAgent(searches.BreadthFirstSearch, None, None)
-        s = searches.BreadthFirstSearch(agent=a, root=_TestState(10))
+        a = _UtilityTestAgent(searches.BreadthFirst, None, None)
+        s = searches.BreadthFirst(agent=a, root=_TestState(10))
         actions = s.perform().solution_path_as_action_list()
 
         self.assertListEqual(actions, ['m', 'm', 'm'])
@@ -77,16 +77,16 @@ class BreadthFirstSearchTest(TestCase):
 class DepthFirstSearchTest(TestCase):
     def test_sanity(self):
         with self.assertRaises(AssertionError):
-            searches.DepthFirstSearch(agent=None, root=_TestState(10))
+            searches.DepthFirst(agent=None, root=_TestState(10))
 
-        a = _UtilityTestAgent(searches.DepthFirstSearch, None, None)
-        s = searches.DepthFirstSearch(agent=a, root=_TestState(10))
+        a = _UtilityTestAgent(searches.DepthFirst, None, None)
+        s = searches.DepthFirst(agent=a, root=_TestState(10))
         self.assertIsNotNone(s)
 
     def test_perform(self):
-        a = _UtilityTestAgent(searches.DepthFirstSearch, None, None)
+        a = _UtilityTestAgent(searches.DepthFirst, None, None)
         s = (searches
-             .DepthFirstSearch(agent=a)
+             .DepthFirst(agent=a)
              .restart(_TestState(10))
              .perform())
 
@@ -98,7 +98,7 @@ class DepthFirstSearchTest(TestCase):
         self.assertEqual(len(s.space), 1)
 
         s = (searches
-             .DepthFirstSearch(agent=a, prevent_cycles='tree')
+             .DepthFirst(agent=a, prevent_cycles='tree')
              .restart(_TestState(10))
              .perform())
 
@@ -110,8 +110,8 @@ class DepthFirstSearchTest(TestCase):
         self.assertEqual(len(s.space), 4)
 
     def test_solution_path_as_action_list(self):
-        a = _UtilityTestAgent(searches.DepthFirstSearch, None, None)
-        s = searches.DepthFirstSearch(agent=a, root=_TestState(10))
+        a = _UtilityTestAgent(searches.DepthFirst, None, None)
+        s = searches.DepthFirst(agent=a, root=_TestState(10))
         actions = s.perform().solution_path_as_action_list()
 
         self.assertListEqual(actions, ['m', 'm', 'm'])

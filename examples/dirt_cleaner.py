@@ -1,16 +1,19 @@
 import time
+from artificial import base, searches, agents
 
-from artificial.base import Environment, State, searches, agents
 
-
-class DirtyState(State):
+class DirtyState(base.State):
     @property
     def is_goal(self):
         return sum(self.data[:-1]) == 0
 
+    def h(self):
+        # We need, at least, 2 operations to clean each dirty sector.
+        return 2 * sum(self.data[:-1]) - 1
 
-class DirtyEnvironment(Environment):
-    shape = (3, 4)
+
+class DirtyEnvironment(base.Environment):
+    shape = (4, 4)
 
     def __init__(self, initial_state):
         if initial_state == 'random':
@@ -96,35 +99,35 @@ class DirtCleanerUtilityAgent(agents.UtilityBasedAgent):
             s = state.mitosis(action=action_id,
                               g=state.g + action['cost'])
 
-            if action['label'] == 'move-left':
+            if action_id == 0:
                 if grid_pos[1] == 0:
                     # Left corner. cannot move left.
                     continue
 
                 s.data[-1] -= 1
 
-            elif action['label'] == 'move-right':
+            elif action_id == 1:
                 if grid_pos[1] == columns - 1:
                     # Right corner. cannot move right.
                     continue
 
                 s.data[-1] += 1
 
-            elif action['label'] == 'move-up':
+            elif action_id == 2:
                 if grid_pos[0] == 0:
                     # First row. Cannot move up.
                     continue
 
                 s.data[-1] -= columns
 
-            elif action['label'] == 'move-down':
+            elif action_id == 3:
                 if grid_pos[0] == rows - 1:
                     # Last row. Cannot move down.
                     continue
 
                 s.data[-1] += columns
 
-            elif action['label'] == 'sweep':
+            elif action_id == 4:
                 if s.data[pos] == 0:
                     # Does not sweep clean sectors.
                     continue
@@ -148,7 +151,7 @@ def main():
 
     env.agents += [
         DirtCleanerUtilityAgent(environment=env,
-                                search=searches.UniformCostSearch,
+                                search=searches.AStar,
                                 actions=(0, 1, 2, 3, 4),
                                 verbose=True)]
 

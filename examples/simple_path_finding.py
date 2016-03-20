@@ -1,8 +1,7 @@
-from artificial import searches
-from artificial.base import Environment, State, agents
+from artificial import base, searches, agents
 
 
-class CityState(State):
+class CityState(base.State):
     """City State.
 
     CityState doesn't need to override State's __eq__ and __hash__ methods,
@@ -19,7 +18,7 @@ class CityState(State):
         return 'city: %d, g: %d' % (self.data, self.g)
 
 
-class SimplePathFinding(Environment):
+class SimplePathFinding(base.Environment):
     real_cost = 0
     d = [
         [0, 6, 12, 25],
@@ -71,7 +70,7 @@ def main():
 
     env.agents += [
         RoutePlanner(environment=env,
-                     search=searches.IterativeDeepeningSearch,
+                     search=searches.IterativeDeepening,
                      search_params=dict(limit=4),
                      actions=(0, 1, 2, 3),
                      verbose=True)
