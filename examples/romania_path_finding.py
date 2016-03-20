@@ -79,7 +79,7 @@ def main():
 
     env.agents += [
         RoutePlanner(environment=env,
-                     search=searches.GreedyBestFirstSearch,
+                     search=searches.GreedyBestFirst,
                      actions=list(range(Romania.g.n_nodes)),
                      verbose=True)
     ]

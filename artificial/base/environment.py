@@ -20,12 +20,11 @@ class State(metaclass=abc.ABCMeta):
     def is_goal(self):
         raise NotImplementedError
 
-    @property
     def h(self):
         return 0
 
     def f(self):
-        return self.g + self.h
+        return self.g + self.h()
 
     def mitosis(self, parenting=True, **mutation):
         """Nuclear division of current state into a new one.
