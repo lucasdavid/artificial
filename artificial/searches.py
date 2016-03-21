@@ -80,9 +80,9 @@ class Base(metaclass=abc.ABCMeta):
         Returns
         -------
         State-like, A solution candidate for the search.
-        Usually, the state's `is_goal` property is True, but that's not really
-        required. Base's `perform` method will then attempt to backtrack the
-        state, recording a sequence of intermediate states.
+        Usually, an `agent.is_goal(state)` call would return True, but that's
+        not really required. Base's `perform` method will then attempt to
+        backtrack the state, recording a sequence of intermediate states.
 
         """
         raise NotImplementedError
@@ -145,7 +145,7 @@ class FringeBase(Base, metaclass=abc.ABCMeta):
             if state is None:
                 continue
 
-            if state.is_goal:
+            if self.agent.is_goal(state):
                 return state
 
             self.expand(state)

@@ -25,6 +25,11 @@ class FunctionsEnvironment(base.Environment):
     max_error = .1
     delta = .008
     failed = False
+    
+    actions = (
+        {'label': 'move-right'},
+        {'label': 'move-left'},        
+    )
 
     @staticmethod
     def actual_f(x):
@@ -49,7 +54,7 @@ class FunctionsEnvironment(base.Environment):
                 self.current_state = DerivativeState(x - self.delta)
 
     def finished(self):
-        return self.failed or super().finished()
+        return self.failed or self.current_state.is_goal
 
 
 class DerivativeFinder(agents.UtilityBasedAgent):
@@ -76,7 +81,7 @@ def main():
     print('==========================\n')
 
     i, max_iterations = 0, 1000
-
+    
     env = FunctionsEnvironment(initial_state=DerivativeState(0))
 
     env.agents += [

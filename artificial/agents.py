@@ -189,6 +189,14 @@ class GoalBasedAgent(Agent, metaclass=abc.ABCMeta):
                 if self.actions_to_perform
                 else None)
 
+    def is_goal(self, state):
+        """Checks if state is agent's local goal.
+
+        By default, an agent's local goal it's the environment global goal.
+        This should be overridden if required.
+        """
+        return state.is_goal
+
 
 class UtilityBasedAgent(GoalBasedAgent, metaclass=abc.ABCMeta):
     """UtilityBasedAgent base class.
