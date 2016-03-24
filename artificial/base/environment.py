@@ -2,11 +2,27 @@ import abc
 import copy
 
 
-class State(metaclass=abc.ABCMeta):
+class State:
     """State class.
-    
-    Keeps track of episodic updates in the environment, maintaining 
+
+    Keeps track of episodic updates in the environment, maintaining
     a sequence through a recursive reference to parent states.
+
+    Examples
+    --------
+
+    Note: these are merely toy examples on how to represent problems using
+    `State`. You will most likely want to extend `State` class and override
+    `is_goal` and `h` methods.
+
+    # 1. Romania Routing Problem.
+    State(0)
+
+    # 2. Dirt Cleaner Problem.
+    # The first four elements in the list represent if the sector
+    # is dirt or not. The last one contains the agent's current position.
+    State([1, 1, 1, 1, 0])
+
     """
 
     def __init__(self, data, parent=None, action=None, g=0):
@@ -18,12 +34,32 @@ class State(metaclass=abc.ABCMeta):
 
     @property
     def is_goal(self):
-        raise NotImplementedError
+        """Checks if `State` object is the environment's goal.
+
+        Some problems involve searching if a state is the agent's goal
+        or the environment's (i.e. global) goal.
+        By default, GoalBasedAgent.is_goal property is exactly the state's
+        `is_goal` property. Hence this must be overridden according to the
+        problem at hand.
+
+        """
+        return False
 
     def h(self):
+        """Heuristic Function.
+
+        An heuristic function is used by some searches, such as `GreedyFirst`
+        and `AStar`, in an attempt to decrease the process' time and memory
+        requirements.
+
+        """
         return 0
 
     def f(self):
+        """F Function.
+
+        A sum of the local cost and the heuristic function.
+        """
         return self.g + self.h()
 
     def mitosis(self, parenting=True, **mutation):
@@ -38,10 +74,20 @@ class State(metaclass=abc.ABCMeta):
         mutation  : dict
             Attributes which should mutate, as well as their mutated values.
 
+        Notes
+        -----
+        By default, divisions create a child s.t. `child.g = parent.g + 1`.
+        This can be overridden by simply passing the parameter g in `mutation`
+        dict.
+
         Returns
         -------
         The clone made.
+
         """
+
+        if 'g' not in mutation:
+            mutation['g'] = self.g + 1
 
         # self.__class__ is used here instead of `State` directly,
         # as we want to keep the specified class implemented by the user.
@@ -69,8 +115,8 @@ class State(metaclass=abc.ABCMeta):
 
 
 class Environment(metaclass=abc.ABCMeta):
-    """Environment base class.
-    
+    """Environment.
+
     Contains artificial and states and defines how these intertwine.
     You must subclass `Environment` for every different problem faced.
     """
@@ -84,3 +130,20 @@ class Environment(metaclass=abc.ABCMeta):
 
     def finished(self):
         return self.current_state.is_goal
+
+
+class RandomlyStartedEnvironment(Environment, metaclass=abc.ABCMeta):
+    """Randomly Started Environment.
+
+    An environment interface which can create states randomly.
+    This is useful for optimization problems where the *solution path* is
+    not important, but the final state itself.
+
+    Notes
+    -----
+
+    Searches such as `HillClimbing` might require this Environment.
+
+    """
+    def random_state():
+        raise NotImplementedError

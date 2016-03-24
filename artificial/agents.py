@@ -70,7 +70,7 @@ class TableDrivenAgent(Agent, metaclass=abc.ABCMeta):
 
 class SimpleReflexAgent(Agent, metaclass=abc.ABCMeta):
     """Simple Reflex Agent.
-    
+
     Basic intelligent agent based on decision rules.
     """
 
@@ -147,7 +147,7 @@ class GoalBasedAgent(Agent, metaclass=abc.ABCMeta):
     This class works as a wrapper around goal-based artificial. Obviously,
     `search` must be implemented correctly in order to achieve
     the desired 'goal-seeking' behavior.
-    
+
     This is also the implementation for Simple-Problem-Solving-Agent,
     as described by S. Russell & P. Norvig in Artificial Intelligence,
     An Modern Approach, 3rd ed. p. 67. I decided to merge both classes
@@ -201,13 +201,17 @@ class GoalBasedAgent(Agent, metaclass=abc.ABCMeta):
 class UtilityBasedAgent(GoalBasedAgent, metaclass=abc.ABCMeta):
     """UtilityBasedAgent base class.
 
-    The difference between artificial of this category to goal-based artificial is
-    the search function, which will attempt to find the goal satisfying some
-    "happiness" measure.
+    The difference between agents of this category to goal-based agents
+    is the search function, which attempts to find the goal satisfying some
+    "utility" (or "happiness") measure.
     """
 
     def utility(self, state):
-        return -state.g
+        """Utility of a state for the current agent's object.
+
+        By default, agents attempt to minimize the cost function `state.f()`.
+        """
+        return -state.f()
 
 
 class LearningAgent(Agent, metaclass=abc.ABCMeta):
