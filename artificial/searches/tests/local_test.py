@@ -7,20 +7,21 @@ from artificial.searches.local import HillClimbing
 class _TestState(base.State):
     @property
     def is_goal(self):
-        return self.g == 2
+        return self.h() == 0
+
+    def h(self):
+        return abs(self.data - 2)
 
 
 class _UtilityTestAgent(agents.UtilityBasedAgent):
     def predict(self, state):
-        children = [state.mitosis(action=1, parenting=False) for i in range(3)]
+        children = [state.mitosis(action=1, parenting=False, g=0)
+                    for i in range(3)]
 
         for i, c in enumerate(children):
             c.data += i
 
         return children
-
-    def utility(self, state):
-        return abs(state.data - 2)
 
 
 class HillClimbingTest(TestCase):
@@ -34,8 +35,9 @@ class HillClimbingTest(TestCase):
 
     def test_perform(self):
         a = _UtilityTestAgent(HillClimbing, None, None)
-        s = HillClimbing(agent=a).restart(_TestState(10))
-        s.perform()
+        s = (HillClimbing(agent=a)
+             .restart(_TestState(0))
+             .perform())
 
-        self.assertTrue(s.solution_candidate.is_goal)
+        self.assertTrue(s.solution_candidate.is_goal, str(s.solution_candidate))
         self.assertEqual(s.solution_candidate.data, 2)

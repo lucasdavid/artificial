@@ -28,6 +28,9 @@ class HillClimbing(base.Base):
         before returning a solution.
 
     """
+
+    backtracks = False
+
     def __init__(self, agent, root=None,
                  strategy='steepest-ascent', restart_limit=None):
         super().__init__(agent=agent, root=root)
@@ -37,16 +40,18 @@ class HillClimbing(base.Base):
 
         self.strategy = strategy
         self.restart_limit = restart_limit
-        self.solution_candidate = self.root
 
     def restart(self, root):
         super().restart(root=root)
-        self.solution_candidate = self.root
 
         return self
 
     def _perform(self):
-        iterations, restart_limit = 0, self.restart_limit or 1
+        self.solution_candidate = self.root
+
+        iterations = 0
+        restart_limit = self.restart_limit or 1
+
         current = self.root or self.agent.environment.random_state()
 
         while iterations < restart_limit:
@@ -69,7 +74,5 @@ class HillClimbing(base.Base):
             if (self.agent.utility(current)
                     > self.agent.utility(self.solution_candidate)):
                 self.solution_candidate = current
-
-            current = self.agent.environment.random_state()
 
         return self.solution_candidate

@@ -75,14 +75,12 @@ class Base(metaclass=abc.ABCMeta):
         return self
 
     def _perform(self):
-        """Actual search performing.
+        """Search actual performing.
 
         Returns
         -------
-        State-like, A solution candidate for the search.
-        Usually, the state's `is_goal` property is True, but that's not really
-        required. Base's `perform` method will then attempt to backtrack the
-        state, recording a sequence of intermediate states.
+        State object (or State's subclass' object), A solution candidate
+        found by the local search.
 
         """
         raise NotImplementedError
