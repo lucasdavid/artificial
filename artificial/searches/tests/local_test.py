@@ -1,3 +1,5 @@
+import random
+
 from unittest import TestCase
 
 from artificial import agents, base
@@ -11,6 +13,10 @@ class _TestState(base.State):
 
     def h(self):
         return abs(self.data - 2)
+
+    @classmethod
+    def generate_random(cls):
+        return cls(random.randint(0, 10))
 
 
 class _UtilityTestAgent(agents.UtilityBasedAgent):
@@ -36,6 +42,24 @@ class HillClimbingTest(TestCase):
     def test_perform(self):
         a = _UtilityTestAgent(HillClimbing, None, None)
         s = (HillClimbing(agent=a)
+             .restart(_TestState(0))
+             .perform())
+
+        self.assertTrue(s.solution_candidate.is_goal, str(s.solution_candidate))
+        self.assertEqual(s.solution_candidate.data, 2)
+
+    def test_classic_strategy(self):
+        a = _UtilityTestAgent(HillClimbing, None, None)
+        s = (HillClimbing(agent=a, strategy='classic')
+             .restart(_TestState(0))
+             .perform())
+
+        self.assertTrue(s.solution_candidate.is_goal, str(s.solution_candidate))
+        self.assertEqual(s.solution_candidate.data, 2)
+
+    def test_random_restart(self):
+        a = _UtilityTestAgent(HillClimbing, None, None)
+        s = (HillClimbing(agent=a, restart_limit=2)
              .restart(_TestState(0))
              .perform())
 

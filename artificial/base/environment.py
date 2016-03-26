@@ -113,6 +113,24 @@ class State:
         return ('data: %s, action: %s, g: %d'
                 % (str(self.data), self.action, self.g))
 
+    @classmethod
+    def generate_random(cls):
+        """Generate Random.
+
+        A class method that generates a random state.
+        This is useful for optimization problems, where the *solution path* is
+        not important (nor the starting point), in oposite to the final
+        state itself.
+
+        Notes
+        -----
+
+        Searches that allow random restart, (e.g.: `HillClimbing`) might
+        require a valid implementation of this method.
+
+        """
+        raise NotImplementedError
+
 
 class Environment(metaclass=abc.ABCMeta):
     """Environment.
@@ -130,20 +148,3 @@ class Environment(metaclass=abc.ABCMeta):
 
     def finished(self):
         return self.current_state.is_goal
-
-
-class RandomlyStartedEnvironment(Environment, metaclass=abc.ABCMeta):
-    """Randomly Started Environment.
-
-    An environment interface which can create states randomly.
-    This is useful for optimization problems where the *solution path* is
-    not important, but the final state itself.
-
-    Notes
-    -----
-
-    Searches such as `HillClimbing` might require this Environment.
-
-    """
-    def random_state():
-        raise NotImplementedError

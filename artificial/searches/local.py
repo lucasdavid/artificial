@@ -48,14 +48,11 @@ class HillClimbing(base.Base):
 
     def _perform(self):
         self.solution_candidate = self.root
-
+        current = self.root
         iterations = 0
         restart_limit = self.restart_limit or 1
 
-        current = self.root or self.agent.environment.random_state()
-
         while iterations < restart_limit:
-            iterations += 1
             stalled = False
 
             while not stalled:
@@ -74,5 +71,11 @@ class HillClimbing(base.Base):
             if (self.agent.utility(current)
                     > self.agent.utility(self.solution_candidate)):
                 self.solution_candidate = current
+
+            if iterations < restart_limit - 1:
+                # There will be a next iteration.
+                current = self.solution_candidate.generate_random()
+
+            iterations += 1
 
         return self.solution_candidate

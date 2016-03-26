@@ -9,7 +9,7 @@ class _TestState(State):
         return self.data == 2
 
 
-class SpaceTest(TestCase):
+class StateTest(TestCase):
     def test_sanity(self):
         s = _TestState(None)
         self.assertIsNotNone(s)
@@ -51,6 +51,20 @@ class SpaceTest(TestCase):
 
         # f() = g() + h() <=> f() = g()
         self.assertEqual(actual, expected)
+
+    def test_is_goal(self):
+        s = State([1,2,3])
+
+        self.assertFalse(s.is_goal)
+
+        s1 = _TestState(0)
+        self.assertFalse(s1.is_goal, s1)
+
+        s1.data = 2
+        self.assertTrue(s1.is_goal, s1)
+
+        s2 = _TestState(2)
+        self.assertTrue(s2.is_goal, s2)
 
     def test___hash__(self):
         actual, expected = (hash(_TestState([1, 2, 3, 4])),
