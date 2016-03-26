@@ -4,8 +4,9 @@ from artificial.base import State, Environment
 
 
 class _TestState(State):
+    @property
     def is_goal(self):
-        return False
+        return self.data == 2
 
 
 class SpaceTest(TestCase):
@@ -79,3 +80,13 @@ class EnvironmentTest(TestCase):
         env.agents += expected
 
         self.assertListEqual(env.agents, expected)
+
+    def test_finished(self):
+        s = _TestState(0)
+        env = _LocalTestEnvironment(s)
+
+        s.data = 1
+        self.assertFalse(env.finished())
+
+        s.data = 2
+        self.assertTrue(env.finished())

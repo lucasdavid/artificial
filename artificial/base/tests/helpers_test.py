@@ -60,6 +60,13 @@ class PriorityQueueTest(TestCase):
         with self.assertRaises(KeyError):
             queue.pop()
 
+        [queue.add(e, p) for e, p in self.sample_sequence]
+        self.assertEqual(len(queue), len(self.sample_expected_pop_sequence))
+
+        queue.remove('first')
+        actual = queue.pop()
+        self.assertEqual(actual, 'forth')
+
     def test_remove(self):
         queue = PriorityQueue()
         entries = ('first', 'forth', 'third', 'second')
