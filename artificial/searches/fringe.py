@@ -3,6 +3,7 @@ from . import base
 from .. import agents
 from ..base import helpers
 
+
 class FringeBase(base.Base, metaclass=abc.ABCMeta):
     """Fringe Base Search.
 
@@ -16,6 +17,7 @@ class FringeBase(base.Base, metaclass=abc.ABCMeta):
              A collection of states in the search fringe.
 
     """
+
     def __init__(self, agent, root=None):
         super().__init__(agent=agent, root=root)
 
@@ -41,6 +43,7 @@ class FringeBase(base.Base, metaclass=abc.ABCMeta):
 
     def extract(self):
         """Fringe extraction policy.
+
         """
         raise NotImplementedError
 
@@ -232,17 +235,23 @@ class DepthFirst(FringeBase):
                     self.space.remove(previous)
                     previous = previous.parent
 
+        if self.limit is None:
+            return current
+
         # Checks if current depth violates limit constraint.
-        return (current
-                if self.limit is None or current.g <= self.limit
-                else None)
+        d = 0
+        p = current.parent
+        while p:
+            p, d = p.parent, d + 1
+        if d <= self.limit:
+            return current
 
     def expand(self, state):
         children = self.agent.predict(state)
 
         if self.prevent_cycles:
             children = [s for s in children if s not in self.space]
-            self.space = self.space.union(children)
+            self.space.update(children)
 
         self.fringe = children + self.fringe
 
@@ -272,7 +281,6 @@ class IterativeDeepening(base.Base):
 
     def restart(self, root):
         super().restart(root)
-        self.depth_limited.restart(root)
 
         return self
 

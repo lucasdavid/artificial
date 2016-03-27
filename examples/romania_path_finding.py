@@ -1,4 +1,6 @@
-from artificial import agents, searches, base
+from artificial import agents, base
+from artificial.searches import fringe as searches
+
 from artificial.base.helpers import Graph
 
 
@@ -46,7 +48,7 @@ class Romania(base.Environment):
     source_city_id = 0
     target_city_id = 11
     real_cost = 0
-    
+
     def update(self):
         for agent in self.agents:
             agent.perceive()

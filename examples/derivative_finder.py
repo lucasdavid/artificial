@@ -1,6 +1,8 @@
 import time
+import random
 
-from artificial import base, searches, agents
+from artificial import base, agents
+from artificial.searches.local import HillClimbing
 
 
 class DerivativeState(base.State):
@@ -20,15 +22,19 @@ class DerivativeState(base.State):
         return 'f(%.2f)=%.2f, dy/dx = %.2f' % (self.data, f(self.data),
                                                self.h())
 
+    @classmethod
+    def generate_random(cls):
+        return cls(data=random.random() * 100 - 50)
+
 
 class FunctionsEnvironment(base.Environment):
     max_error = .1
-    delta = .008
+    delta = .0008
     failed = False
-    
+
     actions = (
         {'label': 'move-right'},
-        {'label': 'move-left'},        
+        {'label': 'move-left'},
     )
 
     @staticmethod
@@ -38,67 +44,54 @@ class FunctionsEnvironment(base.Environment):
     def update(self):
         for agent in self.agents:
             agent.perceive()
-            act = agent.act()
+            x = agent.act()
 
-            if act is None:
+            if x is None:
                 # When hill climber only fails if it's already on the top.
                 self.failed = True
                 break
 
-            x = self.current_state.data
-
-            if act == 0:
-                self.current_state = DerivativeState(x + self.delta)
-
-            elif act == 1:
-                self.current_state = DerivativeState(x - self.delta)
+            self.current_state = DerivativeState(x)
 
     def finished(self):
         return self.failed or self.current_state.is_goal
 
 
 class DerivativeFinder(agents.UtilityBasedAgent):
+    def act(self):
+        return (self.search
+                .restart(root=self.last_known_state)
+                .perform()
+                .solution_candidate
+                .data)
+
     def predict(self, state):
-        children = []
-
-        s = state.mitosis(action=0)
-        s.data += self.environment.delta
-        children.append(s)
-
-        s = state.mitosis(action=1)
-        s.data -= self.environment.delta
-        children.append(s)
-
-        return children
+        x, d = state.data, self.environment.delta
+        return [DerivativeState(x - d), DerivativeState(x + d)]
 
     def utility(self, state):
         return -abs(state.h())
 
 
 def main():
-    print('==========================')
+    print('================================')
     print('Polynomial Approximation Example')
-    print('==========================\n')
+    print('================================\n')
 
-    i, max_iterations = 0, 1000
-    
     env = FunctionsEnvironment(initial_state=DerivativeState(0))
-
     env.agents += [
         DerivativeFinder(environment=env,
-                         search=searches.HillClimbing,
+                         search=HillClimbing,
+                         search_params=dict(restart_limit=10),
                          actions=(0, 1))]
 
-    print('Initial state: {%s}\n' % str(env.current_state))
+    print('Initial:  {%s}' % str(env.current_state))
 
     start = time.time()
 
     try:
-        while i < max_iterations and not env.finished():
-            env.update()
-            print('#%i current state: {%s}' % (i, str(env.current_state)))
-
-            i += 1
+        env.update()
+        print('Solution: {%s}' % str(env.current_state))
 
     except KeyboardInterrupt:
         pass

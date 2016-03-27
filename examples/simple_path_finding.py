@@ -1,5 +1,5 @@
-from artificial import base, searches, agents
-
+from artificial import base, agents
+from artificial.searches import fringe as searches
 
 class CityState(base.State):
     """City State.
@@ -43,6 +43,7 @@ class SimplePathFinding(base.Environment):
             if next_city is None or \
                current == next_city or \
                not self.incidence[current][next_city]:
+                # This agent doesn't know what to do.
                 continue
 
             self.current_state = CityState(next_city)
@@ -70,9 +71,13 @@ def main():
 
     env.agents += [
         RoutePlanner(environment=env,
+                     # Uses Iterative-deepening search.
                      search=searches.IterativeDeepening,
-                     search_params=dict(limit=4),
-                     actions=(0, 1, 2, 3),
+                     # Depths searched are 2 and 3.
+                     search_params={'iterations': range(2, 4)},
+                     # Can move to any city.
+                     actions=list(enumerate(SimplePathFinding.g)),
+                     # Talks all the way.
                      verbose=True)
     ]
 
@@ -83,7 +88,7 @@ def main():
     try:
         while i < max_iterations and not env.finished():
             i += 1
-            print('Iteration %i' % i)
+            print('#%i' % i)
             env.update()
 
             print('Current state: {%s}\n' % str(env.current_state))

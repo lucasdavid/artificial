@@ -1,5 +1,8 @@
 import time
-from artificial import base, searches, agents
+import random
+
+from artificial import base, agents
+from artificial.searches import fringe as searches
 
 
 class DirtyState(base.State):
@@ -11,14 +14,19 @@ class DirtyState(base.State):
         # We need, at least, 2 operations to clean each dirty sector.
         return 2 * sum(self.data[:-1]) - 1
 
+    def __str__(self):
+        return ('%s, action: %s, g: %.2f, h: %.2f'
+                % (''.join(map(str, self.data)), self.action, self.g, self.h()))
+
 
 class DirtyEnvironment(base.Environment):
     shape = (4, 4)
 
     def __init__(self, initial_state):
         if initial_state == 'random':
-            initial_state = DirtyState([1 for _ in range(
-                self.shape[0] * self.shape[1])] + [0])
+            initial_state = DirtyState([round(min(random.random() + .3, 1))
+                                        for _ in range(self.shape[0] *
+                                                       self.shape[1])] + [0])
 
         super().__init__(initial_state=initial_state)
 
@@ -162,7 +170,7 @@ def main():
     try:
         while iteration < max_iterations and not env.finished():
             iteration += 1
-            print('Iteration %i' % iteration)
+            print('#%i' % iteration)
             env.update()
 
             print('Current state: {%s}\n' % str(env.current_state))
