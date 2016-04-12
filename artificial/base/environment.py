@@ -1,5 +1,6 @@
 import abc
 import copy
+import random
 
 
 class State:
@@ -113,34 +114,25 @@ class State:
         return ('data: %s, action: %s, g: %d'
                 % (str(self.data), self.action, self.g))
 
-    @classmethod
-    def generate_random(cls):
-        """Generate Random.
-
-        A class method that generates a random state.
-        This is useful for optimization problems, where the *solution path* is
-        not important (nor the starting point), in oposite to the final
-        state itself.
-
-        Notes
-        -----
-
-        Searches that allow random restart, (e.g.: `HillClimbing`) might
-        require a valid implementation of this method.
-
-        """
-        raise NotImplementedError
-
 
 class Environment(metaclass=abc.ABCMeta):
     """Environment.
 
     Contains artificial and states and defines how these intertwine.
     You must subclass `Environment` for every different problem faced.
+
+    Parameters
+    ----------
+    initial_state : State-like object
+        Initial state of the environment.
+
+    random_state : Random object (default=None)
+        Random instance used for debugging purposes.
     """
 
-    def __init__(self, initial_state):
+    def __init__(self, initial_state, random_state=None):
         self.current_state = self.initial_state = initial_state
+        self.random_state = random_state or random.Random()
         self.agents = []
 
     def update(self):
@@ -148,3 +140,19 @@ class Environment(metaclass=abc.ABCMeta):
 
     def finished(self):
         return self.current_state.is_goal
+
+    def generate_random_state(self):
+        """Generate Random State.
+
+        A class method that generates a random state.
+        This is useful for optimization problems, where the *solution path* is
+        not important (nor the starting point), in opposite to the final
+        state itself.
+
+        Notes
+        -----
+        Searches that allow random restart, (e.g.: `HillClimbing`) might
+        require a valid implementation of this method.
+
+        """
+        raise NotImplementedError

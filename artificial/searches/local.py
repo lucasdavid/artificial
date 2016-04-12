@@ -1,18 +1,33 @@
-import threading
+import abc
 import multiprocessing
+import threading
 
 from . import base
 from .. import agents
 
 
-class HillClimbing(base.Base):
+class Local(base.Base, metaclass=abc.ABCMeta):
+    """Base Local Search.
+
+    """
+    def __init__(self, agent, root=None,
+                 strategy='steepest-ascent', restart_limit=None):
+        super().__init__(agent=agent, root=root)
+
+        assert isinstance(agent, agents.UtilityBasedAgent), \
+            'Local searches require an utility based agent.'
+
+        self.strategy = strategy
+        self.restart_limit = restart_limit
+
+
+class HillClimbing(Local):
     """Hill Climbing Search.
 
     Perform Hill Climbing search according to a designated strategy.
 
     Parameters
     ----------
-
     strategy : ('default'|'steepest-ascent')
         Defines the climbing policy.
 
@@ -32,25 +47,18 @@ class HillClimbing(base.Base):
 
     """
 
-    backtracks = False
-
-    def __init__(self, agent, root=None,
-                 strategy='steepest-ascent', restart_limit=None):
-        super().__init__(agent=agent, root=root)
-
-        assert isinstance(agent, agents.UtilityBasedAgent), \
-            'Hill Climbing Search requires an utility based agent.'
-
-        self.strategy = strategy
-        self.restart_limit = restart_limit
-
-    def _perform(self):
+    def search(self):
         self.solution_candidate = self.root
+
         current = self.root
         it, limit = 0, self.restart_limit or 1
 
         while it < limit:
+            it += 1
             stalled = False
+
+            if current is None:
+                current = self.agent.environment.generate_random_state()
 
             while not stalled:
                 children = self.agent.predict(current)
@@ -70,52 +78,61 @@ class HillClimbing(base.Base):
                             # this to change for something more efficient.
                             continue
 
-            if (self.agent.utility(current) >
-                self.agent.utility(self.solution_candidate)):
-                # Ok, great. Something better was found this iteration.
+            if (not self.solution_candidate or self.agent.utility(current) >
+                    self.agent.utility(self.solution_candidate)):
                 self.solution_candidate = current
 
-            if it < limit - 1:
-                # There will be a next iteration.
-                current = self.solution_candidate.generate_random()
+            # Force random restart.
+            current = None
 
-            it += 1
-
-        return self.solution_candidate
+        return self
 
 
-class LocalBeam(base.Base):
+class LocalBeam(Local):
     """Local Beam.
 
     Parameters
     ----------
     k : ['auto'|int] (default='auto')
         The number of beams to keep track of. If value is `auto`,
-        then the number of beams is infered from the number of processors
+        then the number of beams is inferred from the number of processors
         available.
 
     """
+
     class Beam(threading.Thread):
         def __init__(self, manager):
             super().__init__()
 
             self.manager = manager
+            self.hill_climber = HillClimbing(agent=manager.agent,
+                                             strategy=manager.strategy)
 
         def run(self):
-            pass
+            it, limit = 0, self.manager.restart_limit or 1
 
-    def __init__(self, agent, k='auto',
+            while it < limit:
+                it += 1
+                state = (self.hill_climber
+                         .search()
+                         .solution_candidate)
+
+                with self.manager._solution_update_lock:
+                    if (not self.manager.solution_candidate or
+                        self.manager.agent.utility(state) >
+                            self.manager.agent.utility(
+                                self.manager.solution_candidate)):
+                        self.manager.solution_candidate = state
+
+    def __init__(self, agent, root=None, k='auto',
                  strategy='steepest-ascent', restart_limit=None):
-        super().__init__(agent=agent, root=root)
-
-        assert isinstance(agent, agents.UtilityBasedAgent), \
-            'Hill Climbing Search requires an utility based agent.'
-
+        super().__init__(agent=agent,
+                         root=root,
+                         strategy=strategy,
+                         restart_limit=restart_limit)
         self.k = k
-        self.strategy = strategy
-        self.restart_limit = restart_limit
-
         self.beams = None
+        self._solution_update_lock = threading.Lock()
 
     def restart(self, root):
         super().restart(root=root)
@@ -123,9 +140,15 @@ class LocalBeam(base.Base):
 
         return self
 
-    def _perform(self):
-        if k == 'auto':
+    def search(self):
+        self.solution_candidate = self.solution_path = None
+
+        if self.k == 'auto':
             k = multiprocessing.cpu_count()
+        elif isinstance(self.k, int):
+            k = self.k
+        else:
+            raise ValueError('Unknown value for k (%s)' % str(self.k))
 
         self.beams = [self.Beam(self) for _ in range(k)]
 
@@ -134,3 +157,5 @@ class LocalBeam(base.Base):
 
         for beam in self.beams:
             beam.join()
+
+        return self

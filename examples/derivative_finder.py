@@ -1,5 +1,5 @@
-import time
 import random
+import time
 
 from artificial import base, agents
 from artificial.searches.local import HillClimbing
@@ -22,10 +22,6 @@ class DerivativeState(base.State):
         return 'f(%.2f)=%.2f, dy/dx = %.2f' % (self.data, f(self.data),
                                                self.h())
 
-    @classmethod
-    def generate_random(cls):
-        return cls(data=random.random() * 100 - 50)
-
 
 class FunctionsEnvironment(base.Environment):
     max_error = .1
@@ -36,6 +32,10 @@ class FunctionsEnvironment(base.Environment):
         {'label': 'move-right'},
         {'label': 'move-left'},
     )
+
+    @classmethod
+    def generate_random_state(cls):
+        return DerivativeState(data=random.random() * 100 - 50)
 
     @staticmethod
     def actual_f(x):
@@ -61,7 +61,7 @@ class DerivativeFinder(agents.UtilityBasedAgent):
     def act(self):
         return (self.search
                 .restart(root=self.last_known_state)
-                .perform()
+                .search()
                 .solution_candidate
                 .data)
 

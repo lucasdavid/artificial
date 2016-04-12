@@ -1,11 +1,13 @@
-import time
+import abc
 import random
+import time
+
 import numpy as np
 
 from . import base
 
 
-class Adversarial(base.Search, metaclass=abc.ABCMeta):
+class Adversarial(base.Base, metaclass=abc.ABCMeta):
     """Adversarial Search.
     
     Parameters
@@ -31,21 +33,17 @@ class Adversarial(base.Search, metaclass=abc.ABCMeta):
     """
 
     MINIMIZE, MAXIMIZE = (0, 1)
-    
+
     def __init__(self, agent, root=None,
-                 time_limit=np.inf, depth_limit=np.inf, 
+                 time_limit=np.inf, depth_limit=np.inf,
                  dispose=False):
         super().__init__(agent=agent, root=root)
 
         self.time_limit = time_limit
         self.depth_limit = depth_limit
         self.dispose = dispose
-        
-        self.started_at = None
 
-    def perform(self):
-        self.started_at = time.time()
-        return super().perform()
+        self.started_at = None
 
 
 class Random(Adversarial):
@@ -54,22 +52,30 @@ class Random(Adversarial):
     Actions are taken randomly, achieving a result.
     
     """
+
     def __init__(self, agent, root=None,
                  time_limit=np.inf, depth_limit=np.inf,
-                 dispose=None, random_state=None)
-         self.random_state = random_state or random.Random()
+                 dispose=False, random_state=None):
+        super().__init__(agent=agent, root=root,
+                         time_limit=time_limit, depth_limit=depth_limit,
+                         dispose=dispose)
+        self.random_state = random_state or random.Random()
 
-    def _perform(self):
-        state = self.root
+    def search(self):
+        self.started_at = time.time()
+
+        state = self.root or self.agent.environment.generate_random_state()
         depth = 0
-        
-        while state and depth < self.limit_depth and \
-              time.time() - self.started_at < self.time_limit:
+
+        while (state and depth < self.depth_limit and
+               time.time() - self.started_at < self.time_limit):
             children = self.agent.predict(state)
             state = self.random_state.choice(children) if children else None
             depth += 1
 
-        return state
+        self.solution_candidate = state
+
+        return self
 
 
 class MinMax(Adversarial):
@@ -83,14 +89,15 @@ class MinMax(Adversarial):
     the derivation tree.
 
     """
-    
-    def _perform(self):
-        return self._min_max_policy(self.root, 0, self.MAXIMIZE)
-    
+
+    def search(self):
+        self.started_at = time.time()
+        return self._min_max_policy(self.root, 0)
+
     def _min_max_policy(self, state, depth):
-        if self.depth_limit and depth > self.depth_limit or \
-           time.time() - self.started_at > self.time_limit:
-            return self.agent.utility(self)
+        if (depth > self.depth_limit or
+            time.time() - self.started_at > self.time_limit):
+            return self.agent.utility(state)
 
         children = self.agent.predict(state)
 
@@ -104,6 +111,5 @@ class MinMax(Adversarial):
         return order(children, keys=lambda i, e: utilities[i])
 
 
-class AlphaBetaPrunning(MinMax):
+class AlphaBetaPruning(MinMax):
     pass
-

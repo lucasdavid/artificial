@@ -28,10 +28,10 @@ class UniformCostSearchTest(TestCase):
         s = fringe_searches.UniformCost(agent=a, root=_TestState(10))
         self.assertIsNotNone(s)
 
-    def test_perform(self):
+    def test_search(self):
         a = _UtilityTestAgent(fringe_searches.UniformCost, None, None)
         s = fringe_searches.UniformCost(agent=a).restart(_TestState(10))
-        s.perform()
+        s.search().backtrack()
 
         self.assertTrue(s.solution_candidate.is_goal)
         self.assertTrue(s.solution_path)
@@ -39,7 +39,7 @@ class UniformCostSearchTest(TestCase):
     def test_solution_path_as_action_list(self):
         a = _UtilityTestAgent(fringe_searches.UniformCost, None, None)
         s = fringe_searches.UniformCost(agent=a, root=_TestState(10))
-        actions = s.perform().solution_path_as_action_list()
+        actions = s.search().backtrack().solution_path_as_action_list()
 
         self.assertListEqual(actions, ['m', 'm', 'm'])
 
@@ -53,21 +53,23 @@ class BreadthFirstSearchTest(TestCase):
         s = fringe_searches.BreadthFirst(agent=a, root=_TestState(10))
         self.assertIsNotNone(s)
 
-    def test_perform(self):
+    def test_search(self):
         a = _UtilityTestAgent(fringe_searches.BreadthFirst, None, None)
         s = fringe_searches.BreadthFirst(agent=a).restart(_TestState(10))
-        s.perform()
+        s.search()
 
         self.assertTrue(s.solution_candidate.is_goal)
-        self.assertTrue(s.solution_path)
 
         # Search space is 2^3 - # extracted nodes.
         self.assertEqual(len(s.space) + len(s.fringe), 9 - 3)
 
+        s.backtrack()
+        self.assertTrue(s.solution_path)
+
     def test_solution_path_as_action_list(self):
         a = _UtilityTestAgent(fringe_searches.BreadthFirst, None, None)
         s = fringe_searches.BreadthFirst(agent=a, root=_TestState(10))
-        actions = s.perform().solution_path_as_action_list()
+        actions = s.search().backtrack().solution_path_as_action_list()
 
         self.assertListEqual(actions, ['m', 'm', 'm'])
 
@@ -84,12 +86,13 @@ class DepthFirstSearchTest(TestCase):
         s = fringe_searches.DepthFirst(agent=a, root=_TestState(10))
         self.assertIsNotNone(s)
 
-    def test_perform(self):
+    def test_search(self):
         a = _UtilityTestAgent(fringe_searches.DepthFirst, None, None)
         s = (fringe_searches
              .DepthFirst(agent=a)
              .restart(_TestState(10))
-             .perform())
+             .search()
+             .backtrack())
 
         self.assertTrue(s.solution_candidate.is_goal)
         self.assertTrue(s.solution_path)
@@ -101,7 +104,8 @@ class DepthFirstSearchTest(TestCase):
         s = (fringe_searches
              .DepthFirst(agent=a, prevent_cycles='tree')
              .restart(_TestState(10))
-             .perform())
+             .search()
+             .backtrack())
 
         self.assertTrue(s.solution_candidate.is_goal)
         self.assertTrue(s.solution_path)
@@ -113,6 +117,6 @@ class DepthFirstSearchTest(TestCase):
     def test_solution_path_as_action_list(self):
         a = _UtilityTestAgent(fringe_searches.DepthFirst, None, None)
         s = fringe_searches.DepthFirst(agent=a, root=_TestState(10))
-        actions = s.perform().solution_path_as_action_list()
+        actions = s.search().backtrack().solution_path_as_action_list()
 
         self.assertListEqual(actions, ['m', 'm', 'm'])

@@ -29,7 +29,7 @@ class FringeBase(base.Base, metaclass=abc.ABCMeta):
 
         return self
 
-    def _perform(self):
+    def search(self):
         while self.fringe:
             state = self.extract()
 
@@ -37,9 +37,12 @@ class FringeBase(base.Base, metaclass=abc.ABCMeta):
                 continue
 
             if state.is_goal:
-                return state
+                self.solution_candidate = state
+                break
 
             self.expand(state)
+
+        return self
 
     def extract(self):
         """Fringe extraction policy.
@@ -284,10 +287,10 @@ class IterativeDeepening(base.Base):
 
         return self
 
-    def _perform(self):
+    def search(self):
         for limit in self.iterations:
             self.depth_limited.restart(root=self.root, limit=limit)
 
-            state = self.depth_limited.perform().solution_candidate
+            state = self.depth_limited.search().solution_candidate
             if state:
                 return state

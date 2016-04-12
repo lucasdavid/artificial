@@ -15,7 +15,7 @@ config = {
     'download_url': 'https://github.com/lucasdavid/artificial/'
                     'archive/master.zip',
     'version': '0.1',
-    'install_requires': [],
+    'install_requires': ['numpy'],
     'tests_require': ['nose', 'coverage'],
     'packages': ['artificial'],
     'scripts': [],

@@ -1,7 +1,4 @@
 import abc
-import warnings
-
-from artificial.base.helpers import PriorityQueue
 
 from artificial import agents
 
@@ -10,6 +7,7 @@ class Base(metaclass=abc.ABCMeta):
     """Base Search.
 
     Common interface for searches, including agent, space and root properties.
+
 
     Parameters
     ----------
@@ -21,11 +19,6 @@ class Base(metaclass=abc.ABCMeta):
     root  : State-like
             The state in which the search should start.
 
-    backtracks : bool (default=True)
-                 Once the goal set is reached, backtracking will be performed
-                 in order to create a sequence of intermediate states.
-                 If this operation is not needed or too much time-consuming,
-                 False can be passed and this will be skipped.
 
     Attributes
     ----------
@@ -41,16 +34,15 @@ class Base(metaclass=abc.ABCMeta):
             is set to False.
 
     """
-    def __init__(self, agent, root=None, backtracks=True):
+
+    def __init__(self, agent, root=None):
         assert isinstance(agent, agents.GoalBasedAgent), \
             'First Search requires an goal based agent.'
 
-        self.agent = agent
+        self.a = self.agent = agent
         self.root = self.solution_candidate = self.solution_path = None
 
         self.space = set()
-        self.backtracks = backtracks
-
         self.restart(root)
 
     def restart(self, root):
@@ -61,34 +53,37 @@ class Base(metaclass=abc.ABCMeta):
 
         return self
 
-    def perform(self):
-        self.solution_candidate = self.solution_path = None
-        self.solution_candidate = self._perform()
+    def search(self):
+        """Search for solution candidate.
 
-        if not self.solution_candidate and self.agent.verbose:
-            warnings.warn('Could not find a path (%s:root)->(:goal)'
-                          % self.root)
-
-        if self.backtracks:
-            self.backtrack()
-
-        return self
-
-    def _perform(self):
-        """Search actual performing.
-
-        Returns
-        -------
-        State object (or State's subclass' object), A solution candidate
-        found by the local search.
+        This method should set the `solution_candidate` property
+        to the State-like object found by the search at hand and, finally,
+        return `self` object.
 
         """
         raise NotImplementedError
 
     def backtrack(self):
+        """Backtrack answer.
+
+        For problems where the path to the solution matters, users can call
+        this method to backtrack the solution candidate found and set the
+        `solution_path` property.
+
+        IMPORTANT: this method should always come after searching (the call
+        for `search` method), as only there `solution_candidate`
+        property is set.
+
+        """
         state_sequence = []
 
         state = self.solution_candidate
+
+        if state is None:
+            raise ValueError('Cannot backtrack an nonexistent state.'
+                             'You are most likely backtracking before '
+                             'searching, which is illegal.')
+
         while state:
             state_sequence.insert(0, state)
             state = state.parent
@@ -100,7 +95,8 @@ class Base(metaclass=abc.ABCMeta):
     def solution_path_as_action_list(self):
         """Build a list of actions from the solution candidate path.
 
-        Naturally, must be executed after `perform` call.
+        IMPORTANT: this method must always be executed after `backtrack` call,
+        as only there `solution_path` is set.
 
         Returns
         -------

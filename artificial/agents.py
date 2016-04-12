@@ -194,6 +194,12 @@ class GoalBasedAgent(Agent, metaclass=abc.ABCMeta):
 
         By default, an agent's local goal it's the environment global goal.
         This should be overridden if required.
+
+        Parameters
+        ----------
+        state : State-like object
+            The state to be checked.
+
         """
         return state.is_goal
 
@@ -210,6 +216,12 @@ class UtilityBasedAgent(GoalBasedAgent, metaclass=abc.ABCMeta):
         """Utility of a state for the current agent's object.
 
         By default, agents attempt to minimize the cost function `state.f()`.
+
+        Parameters
+        ----------
+        state : State-like object
+            The state which should have its utility to the agent computed.
+
         """
         return -state.f()
 
