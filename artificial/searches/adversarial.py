@@ -9,30 +9,30 @@ from . import base
 
 class Adversarial(base.Base, metaclass=abc.ABCMeta):
     """Adversarial Search.
-    
+
     Parameters
     ----------
     time_limit : float (default=np.inf)
         Time limit (in seconds) for a performance.
         By default, search has infinite time to make a decision.
-    
+
     depth_limit : float (default=np.inf)
         Depth limit (in hops) for a branch search.
         By default, search can keep going until the branch dies.
 
     dispose : bool (default=False)
         Always dispose memory after a movement.
-    
+
     Attributes
     ----------
     started_at : long
         Time in which performance started.
         `time.time() - started_at` yeilds how much time has
         approximately passed since the `MinMax.perform` was called.
-       
+
     """
 
-    MINIMIZE, MAXIMIZE = (0, 1)
+    MAXIMIZE, MINIMIZE = (0, 1)
 
     def __init__(self, agent, root=None,
                  time_limit=np.inf, depth_limit=np.inf,
@@ -48,9 +48,9 @@ class Adversarial(base.Base, metaclass=abc.ABCMeta):
 
 class Random(Adversarial):
     """Random Adversarial Search.
-    
+
     Actions are taken randomly, achieving a result.
-    
+
     """
 
     def __init__(self, agent, root=None,
@@ -80,11 +80,11 @@ class Random(Adversarial):
 
 class MinMax(Adversarial):
     """Min Max Adversarial Search.
-    
+
     Notes
     -----
     Not all branches can be completely searched in feasible time.
-    `MinMax` assumes that the agent at hand has a "good" utility 
+    `MinMax` assumes that the agent at hand has a "good" utility
     function to evaluate states, regardless of their position in
     the derivation tree.
 
@@ -92,24 +92,82 @@ class MinMax(Adversarial):
 
     def search(self):
         self.started_at = time.time()
-        return self._min_max_policy(self.root, 0)
+        self.solution_candidate = None
+        best_score = -np.inf
 
-    def _min_max_policy(self, state, depth):
+        for c in self.agent.predict(self.root):
+            c_score = self._min_max_policy(c)
+
+            if best_score < c_score:
+                self.solution_candidate = c
+                best_score = c_score
+
+        return self
+
+    def _min_max_policy(self, state, depth=1):
         if (depth > self.depth_limit or
             time.time() - self.started_at > self.time_limit):
+            # Constraints violated.
             return self.agent.utility(state)
 
         children = self.agent.predict(state)
-
         if not children:
-            # Terminal state. Return utility.
+            # Terminal state.
             return self.agent.utility(state)
 
-        utilities = [self._min_max_policy(c, depth + 1) for c in children]
-        order = max if depth % 2 == self.MAXIMIZE else min
-
-        return order(children, keys=lambda i, e: utilities[i])
+        interest = max if depth % 2 == self.MAXIMIZE else min
+        return interest((self._min_max_policy(c, depth + 1) for c in children))
 
 
-class AlphaBetaPruning(MinMax):
-    pass
+class AlphaBeta(Adversarial):
+    """Alpha Beta Pruning Adversarial Search.
+
+    Min-Max search with alpha-beta pruning, a optimization strategy for
+    branch cutting.
+    """
+
+    def search(self):
+        self.started_at = time.time()
+        self.solution_candidate = None
+        best_score = -np.inf
+
+        for c in self.agent.predict(self.root):
+            # Reuses best_score as `a` (this is directly possible because here
+            # we are always maximizing). Also, as `b` is never updated
+            # pruning will never happen at this level and therefore it was
+            # simply not coded.
+            c_score = self._alpha_beta_policy(c, a=best_score)
+
+            if best_score < c_score:
+                self.solution_candidate = c
+                best_score = c_score
+
+        return self
+
+    def _alpha_beta_policy(self, state, depth=1, a=-np.inf, b=np.inf):
+        if (depth > self.depth_limit or
+            time.time() - self.started_at > self.time_limit):
+            # Constraints violated.
+            return self.agent.utility(state)
+
+        children = self.agent.predict(state)
+        if not children:
+            # Terminal state.
+            return self.agent.utility(state)
+
+        v, interest = ((-np.inf, max)
+                        if depth % 2 == self.MAXIMIZE
+                        else (np.inf, min))
+
+        for c in children:
+            v = interest(v, self._alpha_beta_policy(c, depth + 1, a, b))
+
+            if depth % 2 == self.MAXIMIZE:
+                a = interest(a, v)
+            else:
+                b = interest(b, v)
+
+            if b <= a:
+                break
+
+        return v

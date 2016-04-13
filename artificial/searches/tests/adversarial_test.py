@@ -1,44 +1,70 @@
 from unittest import TestCase
 
-from artificial import agents, base
-from artificial.searches import adversarial
-
-
-class _TestAdversarialEnv(base.Environment):
-    def update(self):
-        for agent in self.agents:
-            action = agent.act()
-
-            self.current_state = _TestState(
-                self.current_state.data + 1 if action == 1 else -1
-            )
-
-    def generate_random_state(self):
-        return _TestState(self.random_state.randint(-10, 10))
+from artificial import base, agents
+from artificial.searches.adversarial import Random, MinMax, AlphaBeta
 
 
 class _TestState(base.State):
-    pass
+    def h(self):
+        return self.data
 
 
 class _UtilityTestAgent(agents.UtilityBasedAgent):
+    maximizing_player = True
+
     def predict(self, state):
-        return [_TestState(state.data - 1, action=0),
-                _TestState(state.data + 1, action=1)]
+        return [
+            _TestState(state.data - 1),
+            _TestState(state.data + 1),
+        ]
 
     def utility(self, state):
-        return abs(state.data - 10)
+        return (1 if self.maximizing_player else -1) * state.f()
 
 
 class RandomTest(TestCase):
-    def setUp(self):
-        self.env = _TestAdversarialEnv(_TestState(0))
-        self.agent = _UtilityTestAgent(search=adversarial.Random,
-                                       environment=self.env,
-                                       actions=None)
+    def test_sanitize(self):
+        a = _UtilityTestAgent(Random, None, None)
+        s = Random(agent=a)
 
-    def test_sanity(self):
-        s = adversarial.Random(agent=self.agent, root=self.env.current_state)
-        actions = s.search().backtrack().solution_path_as_action_list()
+        self.assertIsNotNone(s)
 
-        self.assertGreater(len(actions), 0)
+    def test_search(self):
+        a = _UtilityTestAgent(Random, None, None)
+        s = (Random(agent=a, depth_limit=10)
+             .restart(_TestState(50))
+             .search())
+
+        self.assertIsNotNone(s.solution_candidate)
+
+
+class MinMaxTest(TestCase):
+    def test_sanitize(self):
+        a = _UtilityTestAgent(MinMax, None, None)
+        s = MinMax(agent=a, depth_limit=10)
+
+        self.assertIsNotNone(s)
+
+    def test_search(self):
+        a = _UtilityTestAgent(MinMax, None, None)
+        s = (MinMax(agent=a, depth_limit=10)
+             .restart(_TestState(50))
+             .search())
+
+        self.assertIsNotNone(s.solution_candidate)
+
+
+class AlphaBetaTest(TestCase):
+    def test_sanitize(self):
+        a = _UtilityTestAgent(AlphaBeta, None, None)
+        s = AlphaBeta(agent=a, depth_limit=10)
+
+        self.assertIsNotNone(s)
+
+    def test_search(self):
+        a = _UtilityTestAgent(AlphaBeta, None, None)
+        s = (AlphaBeta(agent=a, depth_limit=10)
+             .restart(_TestState(50))
+             .search())
+
+        self.assertIsNotNone(s.solution_candidate)
