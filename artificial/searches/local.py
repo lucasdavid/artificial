@@ -9,7 +9,29 @@ from .. import agents
 class Local(base.Base, metaclass=abc.ABCMeta):
     """Base Local Search.
 
+    Base class for HillClimbing and LocalBeam searches.
+
+    Parameters
+    ----------
+    strategy : ('default'|'steepest-ascent')
+        Defines the climbing policy.
+
+        Options are:
+
+        --- 'classic' : first child that improves utility is choosen.
+
+        --- 'steepest-ascent' : child that provides greatest
+                                utility improvement is choosen.
+
+    restart_limit : (None|int)
+        Define maximum number of random-restarts.
+
+        If None, classic HillClimbing is performed and no restarts occurr.
+        If limit passed is an integer `i`, the agent will restart `i` times
+        before returning a solution.
+
     """
+
     def __init__(self, agent, root=None,
                  strategy='steepest-ascent', restart_limit=None):
         super().__init__(agent=agent, root=root)
@@ -97,6 +119,23 @@ class LocalBeam(Local):
         The number of beams to keep track of. If value is `auto`,
         then the number of beams is inferred from the number of processors
         available.
+
+    strategy : ('default'|'steepest-ascent')
+        Defines the climbing policy.
+
+        Options are:
+
+        --- 'classic' : first child that improves utility is choosen.
+
+        --- 'steepest-ascent' : child that provides greatest
+                                utility improvement is choosen.
+
+    restart_limit : (None|int)
+        Define maximum number of random-restarts.
+
+        If None, classic HillClimbing is performed and no restarts occurr.
+        If limit passed is an integer `i`, the agent will restart `i` times
+        before returning a solution.
 
     """
 

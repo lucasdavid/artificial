@@ -1,5 +1,6 @@
 [run]
-include = *artificial*
+source = artificial
+include = artificial/*
 branch = True
 
 [report]
