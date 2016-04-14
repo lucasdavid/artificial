@@ -221,9 +221,18 @@ class UtilityBasedAgent(GoalBasedAgent, metaclass=abc.ABCMeta):
         ----------
         state : State-like object
             The state which should have its utility to the agent computed.
+        
+        Notes
+        -----
+        Overridings of this method should always remember to set
+        `state.computed_utility` parameter and re-use it, in order
+        to to increase performance.
 
         """
-        return -state.f()
+        state.computed_utility = (state.computed_utility 
+                                  if state.computed_utility is None
+                                  else -state.f())
+        return state.computed_utility
 
 
 class LearningAgent(Agent, metaclass=abc.ABCMeta):

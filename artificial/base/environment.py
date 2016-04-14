@@ -8,6 +8,18 @@ class State:
 
     Keeps track of episodic updates in the environment, maintaining
     a sequence through a recursive reference to parent states.
+    
+    
+    Attributes
+    ----------
+    
+    computed_utility_ : float
+        The utility of a state which was already computed once.
+        The attribute is then set, preventing unnecessary work
+        to be done when utility is called multiple times and 
+        it's an expensive job (e.g., LocalBeam, GeneticAlgorithm
+        searches).
+  
 
     Examples
     --------
@@ -32,6 +44,7 @@ class State:
         self.action = action
 
         self.g = g
+        self.computed_utility_ = None
 
     @property
     def is_goal(self):
@@ -56,7 +69,7 @@ class State:
         """
         return 0
 
-    def f(self):
+    def f(self, persist=False):
         """F Function.
 
         A sum of the local cost and the heuristic function.
