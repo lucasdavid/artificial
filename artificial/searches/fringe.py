@@ -11,33 +11,35 @@ class FringeBase(base.Base, metaclass=abc.ABCMeta):
     Fringes are, by default, `lists`, but can be freely overridden
     for other structures, such as `sets` or `PriorityQueues`.
 
+
     Attributes
     ----------
-    fringe : list
-             A collection of states in the search fringe.
+
+    fringe_ : list
+        A collection of states in the search fringe.
 
     """
 
     def __init__(self, agent, root=None):
         super().__init__(agent=agent, root=root)
 
-        self.fringe = list(self.space) if self.space else []
+        self.fringe_ = list(self.space_) if self.space_ else []
 
     def restart(self, root):
         super().restart(root=root)
-        self.fringe = list(self.space)
+        self.fringe_ = list(self.space_)
 
         return self
 
     def search(self):
-        while self.fringe:
+        while self.fringe_:
             state = self.extract()
 
             if state is None:
                 continue
 
             if state.is_goal:
-                self.solution_candidate = state
+                self.solution_candidate_ = state
                 break
 
             self.expand(state)
@@ -70,19 +72,19 @@ class BreadthFirst(FringeBase):
     """
 
     def extract(self):
-        return self.fringe.pop(0)
+        return self.fringe_.pop(0)
 
     def expand(self, state):
         unseen_children = [s for s in self.agent.predict(state)
-                           if s not in self.space]
-        self.space = self.space.union(unseen_children)
-        self.fringe += unseen_children
+                           if s not in self.space_]
+        self.space_.update(unseen_children)
+        self.fringe_ += unseen_children
 
 
 class UniformCost(FringeBase):
     """Uniform Cost Search.
 
-    Uses a PriorityQueue as fringe, adding and removing states
+    Uses a `PriorityQueue` as fringe, adding and removing states
     according to the path cost required to reach them. This search is
     complete, minimal and optimal.
 
@@ -94,34 +96,34 @@ class UniformCost(FringeBase):
         assert isinstance(agent, agents.UtilityBasedAgent), \
             'Uniform Cost Search requires an utility based agent.'
 
-        self.fringe = helpers.PriorityQueue()
+        self.fringe_ = helpers.PriorityQueue()
 
         if self.root:
-            self.fringe.add(self.root)
+            self.fringe_.add(self.root)
 
     def restart(self, root):
         super().restart(root=root)
 
-        self.fringe = helpers.PriorityQueue()
-        self.fringe.add(self.root)
+        self.fringe_ = helpers.PriorityQueue()
+        self.fringe_.add(self.root)
 
         return self
 
     def extract(self):
-        return self.fringe.pop()
+        return self.fringe_.pop()
 
     def expand(self, state):
-        self.space.add(state)
+        self.space_.add(state)
 
         for child in self.agent.predict(state):
-            if child not in self.space and (child not in self.fringe or
-                                            child.g < self.fringe[child][0]):
+            if child not in self.space_ and (child not in self.fringe_ or
+                                             child.g < self.fringe_[child][0]):
                 # Expanded nodes were already optimally reached.
                 # Just ignore these instances instance.
                 # This is either a new state or its costs is smaller than
                 # the instance found in the fringe, being a shorter path.
                 # Relax edge (thank you for this, Dijkstra).
-                self.fringe.add(child, priority=child.g)
+                self.fringe_.add(child, priority=child.g)
 
 
 class GreedyBestFirst(UniformCost):
@@ -134,18 +136,18 @@ class GreedyBestFirst(UniformCost):
 
     """
     def expand(self, state):
-        self.space.add(state)
+        self.space_.add(state)
 
         for child in self.agent.predict(state):
-            if child not in self.space and child not in self.fringe:
+            if child not in self.space_ and child not in self.fringe_:
                 # Only add states that aren't in the fringe yet.
                 # Recurrent states are likely to have the same heuristic value,
                 # but we chose to keep the one that was added first
                 # (less hops <=> closer to the root).
-                self.fringe.add(child, priority=child.h())
+                self.fringe_.add(child, priority=child.h())
 
 
-class AStar(GreedyBestFirst):
+class AStar(UniformCost):
     """A Star (A*) Search.
 
     Combines Uniform cost and Greedy best first to add/remove states
@@ -157,20 +159,23 @@ class AStar(GreedyBestFirst):
 
     """
     def expand(self, state):
-        self.space.add(state)
+        self.space_.add(state)
 
         for child in self.agent.predict(state):
-            if child not in self.space and (child not in self.fringe or
-                                            child.f() < self.fringe[child][0]):
-                self.fringe.add(child, priority=child.f())
+            if (child not in self.space_ and
+                (child not in self.fringe_ or
+                 child.f() < self.fringe_[child][0])):
+                self.fringe_.add(child, priority=child.f())
 
 
 class DepthFirst(FringeBase):
     """Depth First Search.
 
+
     Parameters
     ----------
-    prevent_cycles : (False|'branch'|'tree')
+
+    prevent_cycles : [False|'branch'|'tree'] (default=False)
         Prevent cyclical searches.
 
         Options are:
@@ -178,34 +183,36 @@ class DepthFirst(FringeBase):
             tab on repetitions and cycles may occur.
 
             'branch' : repetitions in current branch will not be allowed.
-            Requires `O(2d)` memory, as references to predecessors and
-            a set of states in current path are kept.
+            Requires :math:`O(2d)` memory, as references to predecessors and
+            a set of states in the current path are kept.
 
             'tree' : no repetitions are allowed. This option requires
-            `O(b^d + d)`, being no better than Breadth-First search
-            in memory requirements.
-            It can still perform better, however, given a problem domain
-            where the solutions is "far" from the root and an optimal goal
-            in number of hops is not necessary.
+            :math:`O(b^d + d)`, being no better than Breadth-First search
+            in terms of memory requirement.
+            It can still perform better, though, given a problem domain
+            where solutions are "far" from the root and minimizing the
+            number of hops to the solution is not necessary (something
+            which is guaranteed by `BreadthFirst`).
 
-    limit : (None|int)
-            If a positive integer, executes Limited Depth First Search
-            up to a limit and shortcuts branches that violate this limit.
-            If no solution candidate is found before the limit,
-            `DepthLimited` won't be able to properly answer the environment
-            with a action list.
+    limit : [None|int] (default=None)
+        If a positive integer, executes Limited Depth First Search
+        up to a limit and shortcuts branches that violate this limit.
+        If no solution candidate is found before the limit,
+        `DepthLimited` won't be able to properly answer the environment
+        with a action list.
 
-            Obviously, this search is not complete, minimal, or optimal.
+        Obviously, this search is not complete, minimal, or optimal.
 
-            If None, no limit is imposed and original Depth First algorithm
-            is executed.
+        If None, no limit is imposed and original Depth First algorithm
+        is executed.
+
 
     Notes
     -----
 
-        If limit parameter is not None, the state's `g` property is used
-        to assert its depth in the search tree. Users are then oblidge to
-        correctly
+    If limit parameter is not None, the state's `g` property is used
+    to assert its depth in the search tree. Users are then oblidge to
+    correctly
 
     """
 
@@ -226,7 +233,7 @@ class DepthFirst(FringeBase):
 
     def extract(self):
         previous = self.last_expanded
-        current = self.fringe.pop(0)
+        current = self.fringe_.pop(0)
         common = current.parent
         self.last_expanded = current
 
@@ -235,7 +242,7 @@ class DepthFirst(FringeBase):
             if previous and common and previous != common:
                 # We switched branches, perform removal.
                 while previous and previous != common:
-                    self.space.remove(previous)
+                    self.space_.remove(previous)
                     previous = previous.parent
 
         if self.limit is None:
@@ -253,10 +260,10 @@ class DepthFirst(FringeBase):
         children = self.agent.predict(state)
 
         if self.prevent_cycles:
-            children = [s for s in children if s not in self.space]
-            self.space.update(children)
+            children = [s for s in children if s not in self.space_]
+            self.space_.update(children)
 
-        self.fringe = children + self.fringe
+        self.fringe_ = children + self.fringe_
 
 
 class IterativeDeepening(base.Base):
@@ -267,8 +274,29 @@ class IterativeDeepening(base.Base):
     iterative includes the left-side of the Natural set
     (i.e., 1, 2, 3, 4, ...), but not complete nor necessarily optimal.
 
+
     Parameters
     ----------
+
+    prevent_cycles : [False|'branch'|'tree'] (default=False)
+        Prevent cyclical searches.
+
+        Options are:
+            False : classic Depth First Search. Algorithm will NOT keep
+            tab on repetitions and cycles may occur.
+
+            'branch' : repetitions in current branch will not be allowed.
+            Requires :math:`O(2d)` memory, as references to predecessors and
+            a set of states in the current path are kept.
+
+            'tree' : no repetitions are allowed. This option requires
+            :math:`O(b^d + d)`, being no better than Breadth-First search
+            in terms of memory requirement.
+            It can still perform better, though, given a problem domain
+            where solutions are "far" from the root and minimizing the
+            number of hops to the solution is not necessary (something
+            which is guaranteed by `BreadthFirst`).
+
     iterations : [array-like|range] (default=range(10))
                 list of limits passed to `DepthFirst`.
 
@@ -282,15 +310,14 @@ class IterativeDeepening(base.Base):
         self.depth_limited = DepthFirst(agent=agent, root=root,
                                         prevent_cycles=prevent_cycles)
 
-    def restart(self, root):
-        super().restart(root)
-
-        return self
-
     def search(self):
         for limit in self.iterations:
             self.depth_limited.restart(root=self.root, limit=limit)
 
-            state = self.depth_limited.search().solution_candidate
-            if state:
-                return state
+            self.solution_candidate_ = (self.depth_limited.search()
+                                        .solution_candidate_)
+
+            if self.solution_candidate_:
+                break
+
+        return self

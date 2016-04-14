@@ -50,27 +50,28 @@ class HillClimbing(Local):
 
     Parameters
     ----------
+
     strategy : ('default'|'steepest-ascent')
         Defines the climbing policy.
 
         Options are:
 
-        --- 'classic' : first child that improves utility is choosen.
+        --- 'classic' : first child that improves utility is chosen.
 
         --- 'steepest-ascent' : child that provides greatest
-                                utility improvement is choosen.
+                                utility improvement is chosen.
 
     restart_limit : (None|int)
         Define maximum number of random-restarts.
 
-        If None, classic HillClimbing is performed and no restarts occurr.
+        If None, classic HillClimbing is performed and no restarts occur.
         If limit passed is an integer `i`, the agent will restart `i` times
         before returning a solution.
 
     """
 
     def search(self):
-        self.solution_candidate = self.root
+        self.solution_candidate_ = self.root
 
         current = self.root
         it, limit = 0, self.restart_limit or 1
@@ -98,11 +99,11 @@ class HillClimbing(Local):
                             # I do NOT appreciate having to check for classic
                             # strategy every child, and I'd very much like
                             # this to change for something more efficient.
-                            continue
+                            break
 
-            if (not self.solution_candidate or self.agent.utility(current) >
-                    self.agent.utility(self.solution_candidate)):
-                self.solution_candidate = current
+            if (not self.solution_candidate_ or self.agent.utility(current) >
+                    self.agent.utility(self.solution_candidate_)):
+                self.solution_candidate_ = current
 
             # Force random restart.
             current = None
@@ -154,14 +155,14 @@ class LocalBeam(Local):
                 it += 1
                 state = (self.hill_climber
                          .search()
-                         .solution_candidate)
+                         .solution_candidate_)
 
                 with self.manager._solution_update_lock:
-                    if (not self.manager.solution_candidate or
+                    if (not self.manager.solution_candidate_ or
                         self.manager.agent.utility(state) >
                             self.manager.agent.utility(
-                                self.manager.solution_candidate)):
-                        self.manager.solution_candidate = state
+                                self.manager.solution_candidate_)):
+                        self.manager.solution_candidate_ = state
 
     def __init__(self, agent, root=None, k='auto',
                  strategy='steepest-ascent', restart_limit=None):
@@ -180,7 +181,7 @@ class LocalBeam(Local):
         return self
 
     def search(self):
-        self.solution_candidate = self.solution_path = None
+        self.solution_candidate_ = self.solution_path_ = None
 
         if self.k == 'auto':
             k = multiprocessing.cpu_count()

@@ -12,6 +12,7 @@ class Adversarial(base.Base, metaclass=abc.ABCMeta):
 
     Parameters
     ----------
+
     time_limit : float (default=np.inf)
         Time limit (in seconds) for a performance.
         By default, search has infinite time to make a decision.
@@ -25,6 +26,7 @@ class Adversarial(base.Base, metaclass=abc.ABCMeta):
 
     Attributes
     ----------
+
     started_at : long
         Time in which performance started.
         `time.time() - started_at` yeilds how much time has
@@ -55,11 +57,11 @@ class Random(Adversarial):
 
     def __init__(self, agent, root=None,
                  time_limit=np.inf, depth_limit=np.inf,
-                 dispose=False, random_state=None):
+                 dispose=False, random_generator=None):
         super().__init__(agent=agent, root=root,
                          time_limit=time_limit, depth_limit=depth_limit,
                          dispose=dispose)
-        self.random_state = random_state or random.Random()
+        self.random_generator = random_generator or random.Random()
 
     def search(self):
         self.started_at = time.time()
@@ -70,10 +72,12 @@ class Random(Adversarial):
         while (state and depth < self.depth_limit and
                time.time() - self.started_at < self.time_limit):
             children = self.agent.predict(state)
-            state = self.random_state.choice(children) if children else None
+            state = (self.random_generator.choice(children)
+                     if children else None)
+            
             depth += 1
 
-        self.solution_candidate = state
+        self.solution_candidate_ = state
 
         return self
 
@@ -81,8 +85,10 @@ class Random(Adversarial):
 class MinMax(Adversarial):
     """Min Max Adversarial Search.
 
+
     Notes
     -----
+
     Not all branches can be completely searched in feasible time.
     `MinMax` assumes that the agent at hand has a "good" utility
     function to evaluate states, regardless of their position in
@@ -92,14 +98,14 @@ class MinMax(Adversarial):
 
     def search(self):
         self.started_at = time.time()
-        self.solution_candidate = None
+        self.solution_candidate_ = None
         best_score = -np.inf
 
         for c in self.agent.predict(self.root):
             c_score = self._min_max_policy(c)
 
             if best_score < c_score:
-                self.solution_candidate = c
+                self.solution_candidate_ = c
                 best_score = c_score
 
         return self
@@ -124,11 +130,12 @@ class AlphaBeta(Adversarial):
 
     Min-Max search with alpha-beta pruning, a optimization strategy for
     branch cutting.
+
     """
 
     def search(self):
         self.started_at = time.time()
-        self.solution_candidate = None
+        self.solution_candidate_ = None
         best_score = -np.inf
 
         for c in self.agent.predict(self.root):
@@ -139,7 +146,7 @@ class AlphaBeta(Adversarial):
             c_score = self._alpha_beta_policy(c, a=best_score)
 
             if best_score < c_score:
-                self.solution_candidate = c
+                self.solution_candidate_ = c
                 best_score = c_score
 
         return self

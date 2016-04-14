@@ -66,7 +66,7 @@ class GeneticAlgorithm(base.Base):
         
     def search(self):
         self.started_at = time.time()
-        self.solution_candidate = None
+        self.solution_candidate_ = None
         
         return (self
                     .generate_population()
