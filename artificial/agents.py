@@ -3,15 +3,15 @@ import warnings
 
 
 class Agent(metaclass=abc.ABCMeta):
-    """Agent base class.
+    """Agent Base.
 
     Arguments
     ---------
 
-    environment : (None|Environment)
+    environment : Environment
         The environment upon which the agent will act.
 
-    verbose     : (True|False)
+    verbose     : bool
         The mode in which the agent operates.
         If True, errors or warnings are always sent to the output buffer.
 
@@ -39,7 +39,7 @@ class Agent(metaclass=abc.ABCMeta):
         raise NotImplementedError
 
 
-class TableDrivenAgent(Agent, metaclass=abc.ABCMeta):
+class TableDrivenAgent(Agent):
     """Table Driven Agent.
 
     Basic intelligent agent based table of percepts.
@@ -54,21 +54,20 @@ class TableDrivenAgent(Agent, metaclass=abc.ABCMeta):
 
     def perceive(self):
         super().perceive()
-        self.percepts += hash(self.environment.current_state)
+        self.percepts += str(hash(self.environment.current_state))
 
         return self
 
     def act(self):
         if self.percepts not in self.action_map:
-            if self.verbose:
-                warnings.warn('Perception sequence {%s} doesn\'t have a '
-                              'correspondent on action map.' % self.percepts)
+            warnings.warn('Perception sequence {%s} doesn\'t have a '
+                          'correspondent on action map.' % self.percepts)
             return None
 
         return self.action_map[self.percepts]
 
 
-class SimpleReflexAgent(Agent, metaclass=abc.ABCMeta):
+class SimpleReflexAgent(Agent):
     """Simple Reflex Agent.
 
     Basic intelligent agent based on decision rules.
@@ -84,55 +83,69 @@ class SimpleReflexAgent(Agent, metaclass=abc.ABCMeta):
         state = self.last_state
 
         if state not in self.rules:
-            if self.verbose:
-                warnings.warn('Rule set doesn\'t describe an action for '
-                              'state %s' % state)
+            warnings.warn('Rule set doesn\'t describe an action for '
+                          'state %s' % state)
             return None
 
         return self.rules[state]
 
 
 class ModelBasedAgent(Agent, metaclass=abc.ABCMeta):
-    """ModelBasedAgent base class.
+    """ModelBasedAgent Base.
 
     Basic model-based agent for partially observable environments.
     This agent will perceive the environment when possible and
     infer it when otherwise.
 
-    Notes:
-        The method `act` overrides the superclass implementation in order
-        to retrieve the last action being performed. This value must be
-        stored as it might be used when inferring the environment state.
+    This class must be abstract, as its `perceive` and `act` don't
+    really understand or affect the environment in any way (such behavior
+    must be implemented by the class with which `ModelBasedAgent` is being
+    mixed).
 
-        Naturally, ModelBasedAgent must come before any classes that implement
-        `act` and `perceive` methods in the inheritance list. E.g.:
 
-        ```
-        class ModelBasedReflexAgent(ModelBasedAgent, SimpleReflexAgent):
-            ...
-        ```
+    Notes
+    -----
+    
+    The method `act` overrides the superclass implementation in order
+    to retrieve the last action being performed. This value must be
+    stored as it might be used when inferring the environment state.
+
+    Naturally, `ModelBasedAgent` must come before any classes that implement
+    `act` and `perceive` methods in the inheritance list.
+
+
+    Examples
+    --------
+
+    ```
+    class ModelBasedReflexAgent(ModelBasedAgent, SimpleReflexAgent):
+        ...
+    ```
+
     """
 
-    def __init__(self, model, environment, actions, verbose=False):
-        super().__init__(environment=environment, actions=actions,
-                         verbose=verbose)
-        self.model = model
-        self.last_action = None
+    last_action = None
 
     def perceive(self):
-        # Method's simple sketch.
-        #
-        # super().perceive()
-        #
-        # if not self.last_state:
-        #     # Current state is unknown. We must infer it.
-        #     for state in self.predict(self.last_known_state):
-        #         if state.action == self.last_action:
-        #             self.last_known_state = state
-        #             break
-        #
-        # return self
-        raise NotImplementedError
+        super().perceive()
+        
+        if not self.last_state:
+            # Current state is unknown. We must infer it.
+            for state in self.predict(self.last_known_state):
+                if state.action is None:
+                    warnings.warn('Unable to infer which action results in '
+                                  '{%s}. A ModelBasedAgent needs states to '
+                                  'keep track of their entailing actions and '
+                                  'you most likely forgot to generate states '
+                                  'setting their action property in your '
+                                  'agent.predict() implementation.'
+                                  % (str(state)))
+
+                if state.action == self.last_action:
+                    self.last_state = state
+                    break
+        
+        return self
 
     def act(self):
         action = super().act()
@@ -142,7 +155,7 @@ class ModelBasedAgent(Agent, metaclass=abc.ABCMeta):
 
 
 class GoalBasedAgent(Agent, metaclass=abc.ABCMeta):
-    """GoalBasedAgent base class.
+    """GoalBasedAgent Base.
 
     This class works as a wrapper around goal-based artificial. Obviously,
     `search` must be implemented correctly in order to achieve
@@ -158,8 +171,10 @@ class GoalBasedAgent(Agent, metaclass=abc.ABCMeta):
     it completely. When it is finally done, a new search is made and a
     new action sequence will be performed.
 
+
     Parameters
     ----------
+
         goal   : the state which the agent seeks to achieve.
 
         search : a Search's subclass that will be instantiated
@@ -205,7 +220,7 @@ class GoalBasedAgent(Agent, metaclass=abc.ABCMeta):
 
 
 class UtilityBasedAgent(GoalBasedAgent, metaclass=abc.ABCMeta):
-    """UtilityBasedAgent base class.
+    """UtilityBasedAgent Base.
 
     The difference between agents of this category to goal-based agents
     is the search function, which attempts to find the goal satisfying some
@@ -229,10 +244,11 @@ class UtilityBasedAgent(GoalBasedAgent, metaclass=abc.ABCMeta):
         to to increase performance.
 
         """
-        state.computed_utility = (state.computed_utility 
-                                  if state.computed_utility is None
+        state.computed_utility_ = (state.computed_utility_ 
+                                  if state.computed_utility_ is not None
                                   else -state.f())
-        return state.computed_utility
+
+        return state.computed_utility_
 
 
 class LearningAgent(Agent, metaclass=abc.ABCMeta):

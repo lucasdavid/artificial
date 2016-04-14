@@ -9,7 +9,7 @@ class DerivativeState(base.State):
     @property
     def is_goal(self):
         return abs(self.h()) <= FunctionsEnvironment.max_error
-
+    
     def h(self):
         f, d, x = (FunctionsEnvironment.actual_f,
                    FunctionsEnvironment.delta,

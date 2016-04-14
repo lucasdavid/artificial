@@ -50,20 +50,21 @@ class HillClimbing(Local):
 
     Parameters
     ----------
+
     strategy : ('default'|'steepest-ascent')
         Defines the climbing policy.
 
         Options are:
 
-        --- 'classic' : first child that improves utility is choosen.
+        --- 'classic' : first child that improves utility is chosen.
 
         --- 'steepest-ascent' : child that provides greatest
-                                utility improvement is choosen.
+                                utility improvement is chosen.
 
     restart_limit : (None|int)
         Define maximum number of random-restarts.
 
-        If None, classic HillClimbing is performed and no restarts occurr.
+        If None, classic HillClimbing is performed and no restarts occur.
         If limit passed is an integer `i`, the agent will restart `i` times
         before returning a solution.
 
@@ -98,7 +99,7 @@ class HillClimbing(Local):
                             # I do NOT appreciate having to check for classic
                             # strategy every child, and I'd very much like
                             # this to change for something more efficient.
-                            continue
+                            break
 
             if (not self.solution_candidate or self.agent.utility(current) >
                     self.agent.utility(self.solution_candidate)):
