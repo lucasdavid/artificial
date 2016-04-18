@@ -11,6 +11,7 @@ class Base(metaclass=abc.ABCMeta):
 
     Parameters
     ----------
+
     agent : Agent-like
             Agent that requested search. This is needed as only an agent
             of the specific domain problem can predict outcomes based on
@@ -22,13 +23,14 @@ class Base(metaclass=abc.ABCMeta):
 
     Attributes
     ----------
-    space : set
+
+    space_ : set
             A set used to contain states and efficient repetition checking.
 
-    solution_candidate : State-like
+    solution_candidate_ : State-like
             A State's subclass found when performing the search.
 
-    solution_path : list
+    solution_path_ : list
             A list of intermediate states to achieve the goal state.
             This attribute is undefined when `backtracks` parameter
             is set to False.
@@ -40,16 +42,16 @@ class Base(metaclass=abc.ABCMeta):
             'First Search requires an goal based agent.'
 
         self.a = self.agent = agent
-        self.root = self.solution_candidate = self.solution_path = None
+        self.root = self.solution_candidate_ = self.solution_path_ = None
 
-        self.space = set()
+        self.space_ = set()
         self.restart(root)
 
     def restart(self, root):
         self.root = root
-        self.space = {root} if root else set()
-        self.solution_candidate = None
-        self.solution_path = None
+        self.space_ = {root} if root else set()
+        self.solution_candidate_ = None
+        self.solution_path_ = None
 
         return self
 
@@ -77,10 +79,10 @@ class Base(metaclass=abc.ABCMeta):
         """
         state_sequence = []
 
-        state = self.solution_candidate
+        state = self.solution_candidate_
 
         if state is None:
-            raise ValueError('Cannot backtrack an nonexistent state.'
+            raise ValueError('Cannot backtrack a nonexistent state. '
                              'You are most likely backtracking before '
                              'searching, which is illegal.')
 
@@ -88,7 +90,7 @@ class Base(metaclass=abc.ABCMeta):
             state_sequence.insert(0, state)
             state = state.parent
 
-        self.solution_path = state_sequence
+        self.solution_path_ = state_sequence
 
         return self
 
@@ -103,6 +105,6 @@ class Base(metaclass=abc.ABCMeta):
         actions : array-like, a list containing the actions performed
                   by the sates in `solution_path`.
         """
-        return ([s.action for s in self.solution_path[1:]]
-                if self.solution_path
+        return ([s.action for s in self.solution_path_[1:]]
+                if self.solution_path_
                 else None)

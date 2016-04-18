@@ -48,27 +48,27 @@ class HillClimbingTest(TestCase):
              .restart(_TState(0))
              .search())
 
-        self.assertTrue(s.solution_candidate.is_goal,
-                        str(s.solution_candidate))
-        self.assertEqual(s.solution_candidate.data, 100)
+        self.assertTrue(s.solution_candidate_.is_goal,
+                        str(s.solution_candidate_))
+        self.assertEqual(s.solution_candidate_.data, 100)
 
     def test_classic_strategy(self):
         s = (HillClimbing(agent=self.agent, strategy='classic')
              .restart(_TState(0))
              .search())
 
-        self.assertTrue(s.solution_candidate.is_goal,
-                        str(s.solution_candidate))
-        self.assertEqual(s.solution_candidate.data, 100)
+        self.assertTrue(s.solution_candidate_.is_goal,
+                        str(s.solution_candidate_))
+        self.assertEqual(s.solution_candidate_.data, 100)
 
     def test_random_restart(self):
         s = (HillClimbing(agent=self.agent, restart_limit=2)
              .restart(_TState(0))
              .search())
 
-        self.assertTrue(s.solution_candidate.is_goal,
-                        str(s.solution_candidate))
-        self.assertEqual(s.solution_candidate.data, 100)
+        self.assertTrue(s.solution_candidate_.is_goal,
+                        str(s.solution_candidate_))
+        self.assertEqual(s.solution_candidate_.data, 100)
 
 
 class LocalBeamTest(TestCase):
@@ -92,24 +92,25 @@ class LocalBeamTest(TestCase):
         s = (LocalBeam(agent=self.agent, k=2, root=_TState(0))
              .search())
 
-        self.assertTrue(s.solution_candidate.is_goal,
-                        str(s.solution_candidate))
-        self.assertEqual(s.solution_candidate.data, 100)
+        self.assertTrue(s.solution_candidate_.is_goal,
+                        str(s.solution_candidate_))
+        self.assertEqual(s.solution_candidate_.data, 100)
 
     def test_classic_strategy(self):
         s = (LocalBeam(agent=self.agent, root=self.env.current_state,
                        strategy='classic', k=2)
              .search())
 
-        self.assertTrue(s.solution_candidate.is_goal,
-                        str(s.solution_candidate))
-        self.assertEqual(s.solution_candidate.data, 100)
+        self.assertTrue(s.solution_candidate_.is_goal,
+                        str(s.solution_candidate_))
+        self.assertEqual(s.solution_candidate_.data, 100)
 
     def test_random_restart(self):
         s = (LocalBeam(agent=self.agent, root=self.env.current_state,
                        k=2, restart_limit=2)
              .search())
 
-        self.assertTrue(s.solution_candidate.is_goal,
-                        str(s.solution_candidate))
-        self.assertEqual(s.solution_candidate.data, 100)
+        self.assertTrue(s.solution_candidate_.is_goal,
+                        str(s.solution_candidate_))
+        self.assertEqual(s.solution_candidate_.data, 100)
+

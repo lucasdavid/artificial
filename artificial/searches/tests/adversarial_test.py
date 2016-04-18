@@ -35,7 +35,7 @@ class RandomTest(TestCase):
              .restart(_TestState(50))
              .search())
 
-        self.assertIsNotNone(s.solution_candidate)
+        self.assertIsNotNone(s.solution_candidate_)
 
 
 class MinMaxTest(TestCase):
@@ -51,7 +51,7 @@ class MinMaxTest(TestCase):
              .restart(_TestState(50))
              .search())
 
-        self.assertIsNotNone(s.solution_candidate)
+        self.assertIsNotNone(s.solution_candidate_)
 
 
 class AlphaBetaTest(TestCase):
@@ -67,4 +67,4 @@ class AlphaBetaTest(TestCase):
              .restart(_TestState(50))
              .search())
 
-        self.assertIsNotNone(s.solution_candidate)
+        self.assertIsNotNone(s.solution_candidate_)

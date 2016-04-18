@@ -1,8 +1,11 @@
 import random
+import warnings
+
 from unittest import TestCase
 
 from artificial import base, agents
 from artificial.base import State
+from artificial.searches import fringe
 
 
 class _TState(State):
@@ -126,26 +129,25 @@ class SimpleReflexAgentTest(TestCase):
         self.assertIsNone(action)
 
 
-class _TestModelBasedAgent(agents.ModelBasedAgent,
-                           agents.SimpleReflexAgent):
-    def predict(self, state):
-        action = self.rules[state] if state in self.rules else None
-        children = []
-
-        if action:
-            # An state has a single action associated =>
-            # takes to a single state. Although this guy is
-            # very limited, this is just a test.
-            children.append(_TState(action, action=action))
-
-        return children
-
-
 class ModelBasedAgentTest(TestCase):
     def setUp(self):
         self.env = _TEnv(_TState(0))
 
-    def test_sanity(self):
+    def test_infer_state(self):
+        class _TestModelBasedAgent(agents.ModelBasedAgent,
+                                   agents.SimpleReflexAgent):
+            def predict(self, state):
+                a = self.rules[state] if state in self.rules else None
+                children = []
+
+                if a:
+                    # An state has a single action associated =>
+                    # takes to a single state. Although this guy is
+                    # very limited, this is just a test.
+                    children.append(_TState(a, action=a))
+
+                return children
+
         rules = {_TState(0): 1, _TState(1): 2, _TState(2): 1}
         sra = _TestModelBasedAgent(rules, self.env,
                                    rules.values(),
@@ -166,3 +168,53 @@ class ModelBasedAgentTest(TestCase):
         # The last state is a guest of what would 
         # happen if action 1 were taken.
         self.assertEqual(sra.last_state, _TState(1, action=1))
+
+    def test_undefined_action_warning(self):
+        class _TestModelBasedAgent(agents.ModelBasedAgent,
+                                   agents.SimpleReflexAgent):
+            def predict(self, state):
+                a = self.rules[state] if state in self.rules else None
+                children = []
+
+                if a:
+                    children.append(_TState(a))
+
+                return children
+
+        rules = {_TState(0): 1, _TState(1): 2, _TState(2): 1}
+        sra = _TestModelBasedAgent(rules, self.env,
+                                   rules.values(),
+                                   verbose=True)
+        sra.perceive().act()
+
+        # Suddenly, the environment becomes undefined!
+        self.env.current_state = None
+
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            sra.perceive()
+
+            self.assertEqual(len(w), 1)
+            self.assertTrue(issubclass(w[-1].category, UserWarning))
+
+
+class _TestGoalBasedAgent(agents.GoalBasedAgent):
+    def predict(self, state):
+        return [
+            _TState(state.data - 1, action=0, parent=state),
+            _TState(state.data + 1, action=1, parent=state),
+            _TState(state.data, action=2, parent=state),
+        ]
+
+
+class GoalBasedAgentTest(TestCase):
+    def setUp(self):
+        self.env = _TEnv(_TState(0), random_generator=random.Random(0))
+
+    def test_sanity(self):
+        gba = _TestGoalBasedAgent(fringe.BreadthFirst,
+                                  environment=self.env,
+                                  actions=[0, 1, 2])
+        for _ in range(10):
+            self.assertEqual(gba.perceive().act(), 1)
+

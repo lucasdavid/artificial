@@ -68,7 +68,7 @@ class State:
         """
         return 0
 
-    def f(self, persist=False):
+    def f(self):
         """F Function.
 
         A sum of the local cost and the heuristic function.
@@ -133,3 +133,17 @@ class State:
     def __str__(self):
         return ('data: %s, action: %s, g: %d'
                 % (str(self.data), self.action, self.g))
+
+
+class GeneticState(State):
+    """Genetic State.
+
+    State abstraction for searches using `GeneticAlgorithm` class.
+
+    """
+    def cross(self, other):
+        raise NotImplementedError
+
+    def mutate(self, factor, probability):
+        raise NotImplementedError
+

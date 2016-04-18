@@ -77,7 +77,7 @@ class Random(Adversarial):
             
             depth += 1
 
-        self.solution_candidate = state
+        self.solution_candidate_ = state
 
         return self
 
@@ -98,14 +98,14 @@ class MinMax(Adversarial):
 
     def search(self):
         self.started_at = time.time()
-        self.solution_candidate = None
+        self.solution_candidate_ = None
         best_score = -np.inf
 
         for c in self.agent.predict(self.root):
             c_score = self._min_max_policy(c)
 
             if best_score < c_score:
-                self.solution_candidate = c
+                self.solution_candidate_ = c
                 best_score = c_score
 
         return self
@@ -135,7 +135,7 @@ class AlphaBeta(Adversarial):
 
     def search(self):
         self.started_at = time.time()
-        self.solution_candidate = None
+        self.solution_candidate_ = None
         best_score = -np.inf
 
         for c in self.agent.predict(self.root):
@@ -146,7 +146,7 @@ class AlphaBeta(Adversarial):
             c_score = self._alpha_beta_policy(c, a=best_score)
 
             if best_score < c_score:
-                self.solution_candidate = c
+                self.solution_candidate_ = c
                 best_score = c_score
 
         return self
