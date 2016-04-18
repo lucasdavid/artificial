@@ -5,6 +5,9 @@ from artificial import agents, base
 from artificial.searches.local import HillClimbing, LocalBeam
 
 
+random_generator = random.Random(0)
+
+
 class _TState(base.State):
     @property
     def is_goal(self):
@@ -13,11 +16,14 @@ class _TState(base.State):
     def h(self):
         return abs(self.data - 100)
 
+    @classmethod
+    def random(cls):
+        return cls(random_generator.randint(-1000, 1000))
+
 
 class _TestEnvironment(base.Environment):
-    def generate_random_state(self):
-        return _TState(self.random_generator.randint(-1000, 1000))
-
+    state_class_ = _TState
+    
     def update(self):
         pass
 
@@ -74,7 +80,7 @@ class HillClimbingTest(TestCase):
 class LocalBeamTest(TestCase):
     def setUp(self):
         self.env = _TestEnvironment(_TState(0),
-                                    random_generator=random.Random(0))
+                                    random_generator=random_generator)
         self.agent = _UtilityTestAgent(LocalBeam, self.env, actions=None)
 
     def test_sanity(self):

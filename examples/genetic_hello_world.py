@@ -39,6 +39,11 @@ class WordIndividual(base.GeneticState):
     def __str__(self):
         return '%s' % str(self.data)
 
+    @classmethod
+    def random(cls):
+        return cls(''.join(random.choice(string.ascii_lowercase + ' ')
+                           for _ in WordIndividual.expected))
+
 
 class Speller(agents.UtilityBasedAgent):
     def act(self):
@@ -51,14 +56,11 @@ class Speller(agents.UtilityBasedAgent):
 
 
 class World(base.Environment):
+    state_class_ = WordIndividual
+
     def update(self):
         for a in self.agents:
             self.current_state = a.act()
-
-    def generate_random_state(self):
-        return WordIndividual(''.join(
-            random.choice(string.ascii_lowercase + ' ')
-            for _ in WordIndividual.expected))
 
 
 def main():

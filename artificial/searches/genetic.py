@@ -176,7 +176,7 @@ class GeneticAlgorithm(base.Base):
                 # Fist, estimates the time for evaluating a individual.
                 utility_elapsed = time.time()
                 self.agent.utility(
-                    self.agent.environment.generate_random_state())
+                    self.agent.environment.state_class_.random())
                 utility_elapsed = time.time() - utility_elapsed
 
                 # Only 90% is used, as there are other time consuming jobs
@@ -187,7 +187,7 @@ class GeneticAlgorithm(base.Base):
             raise ValueError('Illegal value for population size {%s}.'
                              % self.population_size)
 
-        self.population_ = [self.agent.environment.generate_random_state()
+        self.population_ = [self.agent.environment.state_class_.random()
                             for _ in range(self.population_size_)]
 
         self.solution_candidate_ = max(self.population_,

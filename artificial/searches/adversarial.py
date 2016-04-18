@@ -66,7 +66,7 @@ class Random(Adversarial):
     def search(self):
         self.started_at = time.time()
 
-        state = self.root or self.agent.environment.generate_random_state()
+        state = self.root or self.agent.last_known_state.random()
         depth = 0
 
         while (state and depth < self.depth_limit and

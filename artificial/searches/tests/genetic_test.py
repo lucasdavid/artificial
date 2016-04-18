@@ -9,14 +9,14 @@ from artificial.searches import genetic
 
 
 class _TState(base.GeneticState):
-    word = 'hello world'
+    expected = 'hello world'
 
     def h(self):
-        return sum((1 if self.data[i] != self.word[i] else 0
-                    for i in range(min(len(self.data), len(self.word)))))
+        return sum((1 if self.data[i] != self.expected[i] else 0
+                    for i in range(min(len(self.data), len(self.expected)))))
 
     def cross(self, other):
-        cross_point = random.randint(0, len(_TState.word))
+        cross_point = random.randint(0, len(_TState.expected))
         return _TState(self.data[:cross_point] + other.data[cross_point:])
 
     def mutate(self, factor, probability):
@@ -31,9 +31,14 @@ class _TState(base.GeneticState):
 
         return self
 
+    @classmethod
+    def random(cls):
+        return cls(''.join(random.choice(string.ascii_lowercase + ' ')
+                           for _ in cls.expected))
+
     @property
     def is_goal(self):
-        return self.data == _TState.word
+        return self.data == _TState.expected
 
 
 class _TAgent(agents.UtilityBasedAgent):
@@ -42,12 +47,10 @@ class _TAgent(agents.UtilityBasedAgent):
 
 
 class _TEnv(base.Environment):
+    state_class_ = _TState
+    
     def update(self):
         pass
-
-    def generate_random_state(self):
-        return _TState(''.join(random.choice(string.ascii_lowercase + ' ')
-                               for _ in _TState.word))
 
 
 class GeneticAlgorithmTest(TestCase):
@@ -78,7 +81,7 @@ class GeneticAlgorithmTest(TestCase):
                                       max_evolution_duration=1,
                                       n_jobs=1)
         ga.generate_population()
-        self.assertGreater(len(ga.population_), 1000)
+        self.assertGreater(len(ga.population_), 100)
         self.assertEqual(len(ga.population_), ga.population_size_)
 
         with self.assertRaises(ValueError):
@@ -106,7 +109,7 @@ class GeneticAlgorithmTest(TestCase):
         np.random.seed(0)
 
         ga = genetic.GeneticAlgorithm(
-            self.agent, max_evolution_duration=30,
+            self.agent, max_evolution_duration=60,
             mutation_factor=.5, mutation_probability=1)
         solution = ga.search().solution_candidate_
 
@@ -115,3 +118,4 @@ class GeneticAlgorithmTest(TestCase):
 
         # Got only three or less letters wrong.
         self.assertEqual(solution.data, 'hello world')
+ 
