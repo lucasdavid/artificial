@@ -240,14 +240,14 @@ class UtilityBasedAgent(GoalBasedAgent, metaclass=abc.ABCMeta):
         
         Notes
         -----
-        Overridings of this method should always remember to set
+        Overriding this method should always be followed by setting
         `state.computed_utility` parameter and re-use it, in order
         to to increase performance.
 
         """
         state.computed_utility_ = (state.computed_utility_ 
-                                  if state.computed_utility_ is not None
-                                  else -state.f())
+                                   if state.computed_utility_ is not None
+                                   else -state.f())
 
         return state.computed_utility_
 
