@@ -7,6 +7,8 @@ import numpy as np
 from artificial import base, agents
 from artificial.searches import genetic
 
+random_generator = random.Random(0)
+
 
 class _TState(base.GeneticState):
     expected = 'hello world'
@@ -43,20 +45,20 @@ class _TState(base.GeneticState):
 
 class _TAgent(agents.UtilityBasedAgent):
     def predict(self, state):
-        pass
+        """Predicts nothing"""
 
 
 class _TEnv(base.Environment):
     state_class_ = _TState
     
     def update(self):
-        pass
+        """Updates nothing"""
 
 
 class GeneticAlgorithmTest(TestCase):
     def setUp(self):
         self.env = _TEnv(_TState('UkDmEmaPCvK'),
-                         random_generator=random.Random(0))
+                         random_generator=random_generator)
         self.agent = _TAgent(search=genetic.GeneticAlgorithm,
                              environment=self.env,
                              actions=None)
@@ -66,13 +68,14 @@ class GeneticAlgorithmTest(TestCase):
         self.assertIsNotNone(ga)
 
     def test_generate_population(self):
-        ga = genetic.GeneticAlgorithm(self.agent)
-        ga.generate_population()
+        ga = genetic.GeneticAlgorithm(self.agent, max_evolution_cycles=1)
+        ga.search()
         self.assertEqual(len(ga.population_), 1000)
         self.assertEqual(len(ga.population_), ga.population_size_)
 
-        ga = genetic.GeneticAlgorithm(self.agent, population_size=20)
-        ga.generate_population()
+        ga = genetic.GeneticAlgorithm(self.agent, population_size=20,
+                                      max_evolution_cycles=1)
+        ga.search()
         self.assertEqual(len(ga.population_), 20)
         self.assertEqual(len(ga.population_), ga.population_size_)
 
@@ -80,28 +83,40 @@ class GeneticAlgorithmTest(TestCase):
                                       max_evolution_cycles=10,
                                       max_evolution_duration=1,
                                       n_jobs=1)
-        ga.generate_population()
+        ga.search()
         self.assertGreater(len(ga.population_), 100)
         self.assertEqual(len(ga.population_), ga.population_size_)
 
         with self.assertRaises(ValueError):
             (genetic
-             .GeneticAlgorithm(self.agent, population_size=.5)
-             .generate_population())
+             .GeneticAlgorithm(self.agent, population_size=.5,
+                               max_evolution_cycles=1)
+             .search())
 
-    def test_breeding_selection(self):
+    def test_select_for_breeding(self):
         for method in ('random', 'tournament', 'roulette', 'gattaca'):
             ga = genetic.GeneticAlgorithm(self.agent,
                                           n_selected=20,
-                                          breeding_selection=method)
-            ga.generate_population().breeding_selection()
+                                          breeding_selection=method,
+                                          max_evolution_cycles=1)
+            
+            (ga.search_start().generate_population().cycle_start()
+               .select_for_breeding())
             self.assertEqual(len(ga.selected_), 20)
+
+        with self.assertRaises(ValueError):
+            ga = genetic.GeneticAlgorithm(self.agent,
+                                          population_size=100,
+                                          breeding_selection='tournament',
+                                          tournament_size=200)
+            ga.search()
 
     def test_breed(self):
         ga = genetic.GeneticAlgorithm(self.agent,
                                       population_size=100, n_selected=100)
 
-        ga.generate_population().breeding_selection().breed()
+        (ga.search_start().generate_population().cycle_start()
+           .select_for_breeding().breed())
         self.assertEqual(len(ga.population_), 100)
         self.assertEqual(len(ga.offspring_), 50)
 
@@ -109,13 +124,18 @@ class GeneticAlgorithmTest(TestCase):
         np.random.seed(0)
 
         ga = genetic.GeneticAlgorithm(
-            self.agent, max_evolution_duration=60,
-            mutation_factor=.5, mutation_probability=1)
+            self.agent, mutation_factor=.5, mutation_probability=1)
         solution = ga.search().solution_candidate_
 
         # There is a solution.
         self.assertIsNotNone(solution)
 
+        self.assertEqual(ga.population_size_, 1000)
+        self.assertEqual(ga.n_selected_, 500)
+
+        # Assert clean-up was made.
+        self.assertIsNone(ga.offspring_)
+        self.assertIsNone(ga.selected_)
+
         # Got only three or less letters wrong.
         self.assertEqual(solution.data, 'hello world')
- 
