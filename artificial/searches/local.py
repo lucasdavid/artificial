@@ -81,7 +81,7 @@ class HillClimbing(Local):
             stalled = False
 
             if current is None:
-                current = self.agent.environment.generate_random_state()
+                current = self.agent.environment.state_class_.random()
 
             while not stalled:
                 children = self.agent.predict(current)

@@ -8,10 +8,8 @@ class State:
     Keeps track of episodic updates in the environment, maintaining
     a sequence through a recursive reference to parent states.
     
-    
     Attributes
     ----------
-    
     computed_utility_ : float
         The utility of a state which was already computed once.
         The attribute is then set, preventing unnecessary work
@@ -19,10 +17,8 @@ class State:
         it's an expensive job (e.g., LocalBeam, GeneticAlgorithm
         searches).
   
-
     Examples
     --------
-
     Note: these are merely toy examples on how to represent problems using
     `State`. You will most likely want to extend `State` class and override
     `is_goal` and `h` methods.
@@ -78,10 +74,8 @@ class State:
     def mitosis(self, parenting=True, copy=True, **mutation):
         """Nuclear division of current state into a new one.
 
-
         Parameters
         ----------
-    
         parenting : bool (default=True)
             Define clone parent as :self if true. parent will be None,
             otherwise.
@@ -93,13 +87,11 @@ class State:
         mutation : dict
             Attributes which should mutate, as well as their mutated values.
 
-
         Notes
         -----
         By default, divisions create a child s.t. `child.g = parent.g + 1`.
         This can be overridden by simply passing the parameter g in `mutation`
         dict.
-
 
         Returns
         -------
@@ -134,6 +126,24 @@ class State:
         return ('data: %s, action: %s, g: %d'
                 % (str(self.data), self.action, self.g))
 
+    @classmethod
+    def random(cls):
+        """Generate Random State.
+
+        A class method that generates a random state. This is useful for
+        optimization problems or genetic algorithm searches, where the
+        *solution path* is not important (nor the starting point),
+        in opposite to the final state itself.
+
+        Notes
+        -----
+        Searches that allow random restart, (e.g.: `HillClimbing`) might
+        require a valid implementation of this method.
+
+        """
+        raise NotImplementedError
+
+
 
 class GeneticState(State):
     """Genetic State.
@@ -146,4 +156,3 @@ class GeneticState(State):
 
     def mutate(self, factor, probability):
         raise NotImplementedError
-

@@ -31,6 +31,11 @@ class _TState(base.GeneticState):
 
         return self
 
+    @classmethod
+    def random(cls):
+        return cls(''.join(random.choice(string.ascii_lowercase + ' ')
+                           for _ in cls.expected))
+
     @property
     def is_goal(self):
         return self.data == _TState.expected
@@ -42,12 +47,10 @@ class _TAgent(agents.UtilityBasedAgent):
 
 
 class _TEnv(base.Environment):
+    state_class_ = _TState
+    
     def update(self):
         pass
-
-    def generate_random_state(self):
-        return _TState(''.join(random.choice(string.ascii_lowercase + ' ')
-                               for _ in _TState.expected))
 
 
 class GeneticAlgorithmTest(TestCase):

@@ -22,6 +22,10 @@ class DerivativeState(base.State):
         return 'f(%.2f)=%.2f, dy/dx = %.2f' % (self.data, f(self.data),
                                                self.h())
 
+    @classmethod
+    def random(cls):
+        return cls(data=random.random() * 100 - 50)
+
 
 class FunctionsEnvironment(base.Environment):
     max_error = .1
@@ -33,9 +37,7 @@ class FunctionsEnvironment(base.Environment):
         {'label': 'move-left'},
     )
 
-    @classmethod
-    def generate_random_state(cls):
-        return DerivativeState(data=random.random() * 100 - 50)
+    state_class_ = DerivativeState
 
     @staticmethod
     def actual_f(x):
