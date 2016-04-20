@@ -7,17 +7,20 @@ class Agent(metaclass=abc.ABCMeta):
 
     Arguments
     ---------
-
     environment : Environment
         The environment upon which the agent will act.
 
-    verbose     : bool
+    actions : list-like (optional)
+        Which actions an agent has. This is used as a reminder for
+        `predict` implementations and it's optional,
+
+    verbose : bool (default=False)
         The mode in which the agent operates.
         If True, errors or warnings are always sent to the output buffer.
 
     """
 
-    def __init__(self, environment, actions, verbose=False):
+    def __init__(self, environment, actions=None, verbose=False):
         self.environment = environment
         self.actions = actions
         self.verbose = verbose
@@ -35,9 +38,6 @@ class Agent(metaclass=abc.ABCMeta):
     def act(self):
         raise NotImplementedError
 
-    def predict(self, state):
-        raise NotImplementedError
-
 
 class TableDrivenAgent(Agent):
     """Table Driven Agent.
@@ -45,7 +45,7 @@ class TableDrivenAgent(Agent):
     Basic intelligent agent based table of percepts.
     """
 
-    def __init__(self, action_map, environment, actions, verbose=False):
+    def __init__(self, action_map, environment, actions=None, verbose=False):
         super().__init__(environment=environment, actions=actions,
                          verbose=verbose)
 
@@ -73,7 +73,7 @@ class SimpleReflexAgent(Agent):
     Basic intelligent agent based on decision rules.
     """
 
-    def __init__(self, rules, environment, actions, verbose=False):
+    def __init__(self, rules, environment, actions=None, verbose=False):
         super().__init__(environment=environment, actions=actions,
                          verbose=verbose)
 
@@ -90,7 +90,25 @@ class SimpleReflexAgent(Agent):
         return self.rules[state]
 
 
-class ModelBasedAgent(Agent, metaclass=abc.ABCMeta):
+class PredictableAgent(Agent, metaclass=abc.ABCMeta):
+    """Predictable Agent Base.
+
+    Base for agents that can predict states based on their current perception
+    of the environment.
+    """
+    def predict(self, state):
+        """Predicts states based on the current perceived one and the
+        agent's possible actions.
+
+        Returns
+        -------
+        State-like list.
+
+        """
+        raise NotImplementedError
+
+
+class ModelBasedAgent(PredictableAgent, metaclass=abc.ABCMeta):
     """ModelBasedAgent Base.
 
     Basic model-based agent for partially observable environments.
@@ -105,7 +123,7 @@ class ModelBasedAgent(Agent, metaclass=abc.ABCMeta):
 
     Notes
     -----
-    
+
     The method `act` overrides the superclass implementation in order
     to retrieve the last action being performed. This value must be
     stored as it might be used when inferring the environment state.
@@ -128,7 +146,7 @@ class ModelBasedAgent(Agent, metaclass=abc.ABCMeta):
 
     def perceive(self):
         super().perceive()
-        
+
         if not self.last_state:
             # Current state is unknown. We must infer it.
             for state in self.predict(self.last_known_state):
@@ -144,7 +162,7 @@ class ModelBasedAgent(Agent, metaclass=abc.ABCMeta):
                 if state.action == self.last_action:
                     self.last_state = state
                     break
-        
+
         return self
 
     def act(self):
@@ -154,7 +172,7 @@ class ModelBasedAgent(Agent, metaclass=abc.ABCMeta):
         return action
 
 
-class GoalBasedAgent(Agent, metaclass=abc.ABCMeta):
+class GoalBasedAgent(PredictableAgent, metaclass=abc.ABCMeta):
     """GoalBasedAgent Base.
 
     This class works as a wrapper around goal-based artificial. Obviously,
@@ -175,13 +193,11 @@ class GoalBasedAgent(Agent, metaclass=abc.ABCMeta):
     Parameters
     ----------
 
-        goal   : the state which the agent seeks to achieve.
-
         search : a Search's subclass that will be instantiated
                  on the agent's self initialization.
     """
 
-    def __init__(self, search, environment, actions,
+    def __init__(self, search, environment, actions=None,
                  search_params=None, verbose=False):
         super().__init__(environment=environment, actions=actions,
                          verbose=verbose)
