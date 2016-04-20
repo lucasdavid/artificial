@@ -95,7 +95,7 @@ class LocalBeamTest(TestCase):
         self.assertIsNotNone(s)
 
     def test_search(self):
-        s = (LocalBeam(agent=self.agent, k=2, root=_TState(0))
+        s = (LocalBeam(agent=self.agent, root=_TState(0))
              .search())
 
         self.assertTrue(s.solution_candidate_.is_goal,
@@ -119,4 +119,3 @@ class LocalBeamTest(TestCase):
         self.assertTrue(s.solution_candidate_.is_goal,
                         str(s.solution_candidate_))
         self.assertEqual(s.solution_candidate_.data, 100)
-

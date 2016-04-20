@@ -8,10 +8,10 @@ from artificial.base import State
 from artificial.searches import fringe
 
 
-class _TState(State):
+class _S(State):
     @property
     def is_goal(self):
-        return self.h() == 0
+        return self.data == 10
 
     def h(self):
         return abs(self.data - 10)
@@ -24,7 +24,7 @@ class _TEnv(base.Environment):
 
 class TableDrivenAgentTest(TestCase):
     def setUp(self):
-        self.env = _TEnv(_TState(0), random_generator=random.Random(0))
+        self.env = _TEnv(_S(0), random_generator=random.Random(0))
 
     def test_sanity(self):
         action_map = {
@@ -55,12 +55,12 @@ class TableDrivenAgentTest(TestCase):
                                       verbose=True)
 
         tda.perceive()
-        self.assertEqual(tda.percepts, str(hash(_TState(0))))
+        self.assertEqual(tda.percepts, str(hash(_S(0))))
 
-        self.env.current_state = _TState(100)
+        self.env.current_state = _S(100)
         tda.perceive()
         self.assertEqual(tda.percepts,
-                         str(hash(_TState(0))) + str(hash(_TState(100))))
+                         str(hash(_S(0))) + str(hash(_S(100))))
 
     def test_act(self):
         action_map = {
@@ -76,15 +76,15 @@ class TableDrivenAgentTest(TestCase):
                                       verbose=True)
 
         tda.perceive()
-        self.assertEqual(tda.percepts, str(hash(_TState(0))))
+        self.assertEqual(tda.percepts, str(hash(_S(0))))
 
         action = tda.act()
         self.assertEqual(action, 1)
 
-        self.env.current_state = _TState(100)
+        self.env.current_state = _S(100)
         tda.perceive()
         self.assertEqual(tda.percepts,
-                         str(hash(_TState(0))) + str(hash(_TState(100))))
+                         str(hash(_S(0))) + str(hash(_S(100))))
 
         # State "hash(0)+hash(100)" is not described on table.
         tda.perceive()
@@ -99,10 +99,10 @@ class TableDrivenAgentTest(TestCase):
 
 class SimpleReflexAgentTest(TestCase):
     def setUp(self):
-        self.env = _TEnv(_TState(0))
+        self.env = _TEnv(_S(0))
 
     def test_sanity(self):
-        rules = {_TState(0): 1, _TState(1): 2, _TState(2): 1}
+        rules = {_S(0): 1, _S(1): 2, _S(2): 1}
 
         sra = agents.SimpleReflexAgent(rules, self.env,
                                        rules.values(),
@@ -111,7 +111,7 @@ class SimpleReflexAgentTest(TestCase):
         self.assertIsNotNone(sra)
 
     def test_act(self):
-        rules = {_TState(0): 1, _TState(1): 2, _TState(2): 1}
+        rules = {_S(0): 1, _S(1): 2, _S(2): 1}
 
         sra = agents.SimpleReflexAgent(rules, self.env,
                                        rules.values(),
@@ -120,7 +120,7 @@ class SimpleReflexAgentTest(TestCase):
         action = sra.perceive().act()
         self.assertEqual(action, 1)
 
-        self.env.current_state = _TState(3)
+        self.env.current_state = _S(3)
         action = sra.perceive().act()
         self.assertIsNone(action)
 
@@ -131,7 +131,7 @@ class SimpleReflexAgentTest(TestCase):
 
 class ModelBasedAgentTest(TestCase):
     def setUp(self):
-        self.env = _TEnv(_TState(0))
+        self.env = _TEnv(_S(0))
 
     def test_infer_state(self):
         class _TestModelBasedAgent(agents.ModelBasedAgent,
@@ -144,17 +144,17 @@ class ModelBasedAgentTest(TestCase):
                     # An state has a single action associated =>
                     # takes to a single state. Although this guy is
                     # very limited, this is just a test.
-                    children.append(_TState(a, action=a))
+                    children.append(_S(a, action=a))
 
                 return children
 
-        rules = {_TState(0): 1, _TState(1): 2, _TState(2): 1}
+        rules = {_S(0): 1, _S(1): 2, _S(2): 1}
         sra = _TestModelBasedAgent(rules, self.env,
                                    rules.values(),
                                    verbose=True)
 
         action = sra.perceive().act()
-        self.assertEqual(sra.last_state, _TState(0))
+        self.assertEqual(sra.last_state, _S(0))
         self.assertEqual(sra.last_action, 1)
         self.assertEqual(sra.last_action, action)
 
@@ -163,11 +163,11 @@ class ModelBasedAgentTest(TestCase):
         sra.perceive()
 
         # The last state known is 0.
-        self.assertEqual(sra.last_known_state, _TState(0))
+        self.assertEqual(sra.last_known_state, _S(0))
 
         # The last state is a guest of what would 
         # happen if action 1 were taken.
-        self.assertEqual(sra.last_state, _TState(1, action=1))
+        self.assertEqual(sra.last_state, _S(1, action=1))
 
     def test_undefined_action_warning(self):
         class _TestModelBasedAgent(agents.ModelBasedAgent,
@@ -177,11 +177,11 @@ class ModelBasedAgentTest(TestCase):
                 children = []
 
                 if a:
-                    children.append(_TState(a))
+                    children.append(_S(a))
 
                 return children
 
-        rules = {_TState(0): 1, _TState(1): 2, _TState(2): 1}
+        rules = {_S(0): 1, _S(1): 2, _S(2): 1}
         sra = _TestModelBasedAgent(rules, self.env,
                                    rules.values(),
                                    verbose=True)
@@ -201,20 +201,41 @@ class ModelBasedAgentTest(TestCase):
 class _TestGoalBasedAgent(agents.GoalBasedAgent):
     def predict(self, state):
         return [
-            _TState(state.data - 1, action=0, parent=state),
-            _TState(state.data + 1, action=1, parent=state),
-            _TState(state.data, action=2, parent=state),
+            _S(state.data - 1, action=0, parent=state),
+            _S(state.data + 1, action=1, parent=state),
+            _S(state.data, action=2, parent=state),
         ]
 
 
 class GoalBasedAgentTest(TestCase):
     def setUp(self):
-        self.env = _TEnv(_TState(0), random_generator=random.Random(0))
+        self.env = _TEnv(_S(0), random_generator=random.Random(0))
 
     def test_sanity(self):
+        gba = _TestGoalBasedAgent(fringe.BreadthFirst,
+                                  environment=self.env,
+                                  actions=[0, 1, 2])
+        self.assertIsNotNone(gba)
+
+    def test_act(self):
         gba = _TestGoalBasedAgent(fringe.BreadthFirst,
                                   environment=self.env,
                                   actions=[0, 1, 2])
         for _ in range(10):
             self.assertEqual(gba.perceive().act(), 1)
 
+        # Test verbosity.
+        gba = _TestGoalBasedAgent(fringe.BreadthFirst,
+                                  verbose=True,
+                                  environment=self.env,
+                                  actions=[0, 1, 2])
+        for _ in range(10):
+            self.assertEqual(gba.perceive().act(), 1)
+
+    def test_is_agent_goal(self):
+        gba = _TestGoalBasedAgent(fringe.BreadthFirst,
+                                  environment=self.env,
+                                  actions=[0, 1, 2])
+
+        self.assertFalse(gba.is_goal(_S(0)))
+        self.assertTrue(gba.is_goal(_S(10)))

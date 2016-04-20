@@ -82,9 +82,9 @@ class Base(metaclass=abc.ABCMeta):
         state = self.solution_candidate_
 
         if state is None:
-            raise ValueError('Cannot backtrack a nonexistent state. '
-                             'You are most likely backtracking before '
-                             'searching, which is illegal.')
+            raise RuntimeError('Cannot backtrack a nonexistent state. You are '
+                               'most likely backtracking before searching, '
+                               'which is illegal.')
 
         while state:
             state_sequence.insert(0, state)

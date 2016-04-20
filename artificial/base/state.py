@@ -144,8 +144,7 @@ class State:
         raise NotImplementedError
 
 
-
-class GeneticState(State):
+class GeneticState(State, metaclass=abc.ABCMeta):
     """Genetic State.
 
     State abstraction for searches using `GeneticAlgorithm` class.

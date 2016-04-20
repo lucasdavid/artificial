@@ -12,8 +12,8 @@ class WordIndividual(base.GeneticState):
     expected = 'i like cookies'
 
     def h(self):
-        return sum((1 if self.data[i] != self.expected[i] else 0
-                    for i in range(min(len(self.data), len(self.expected)))))
+        return sum(1 if self.data[i] != self.expected[i] else 0
+                   for i in range(min(len(self.data), len(self.expected))))
 
     def cross(self, other):
         cross_point = random.randint(0, len(WordIndividual.expected))
@@ -52,15 +52,20 @@ class Speller(agents.UtilityBasedAgent):
                 .solution_candidate_)
 
     def predict(self, state):
-        pass
+        raise RuntimeError('Sorry! I don\'t know how to predict states!')
 
 
 class World(base.Environment):
     state_class_ = WordIndividual
 
     def update(self):
+        print('Initial: {%s}' % str(self.current_state))
+
         for a in self.agents:
             self.current_state = a.act()
+
+            print('\n'.join(str(p) for p in a.search.population_[10:15]))
+            print('...\nAgent found the solution: {%s}' % self.current_state)
 
 
 def main():
@@ -68,32 +73,21 @@ def main():
     print('Word Speller Example')
     print('====================\n')
 
-    env = World(initial_state=None)
-    env.agents += [
-        Speller(environment=env,
-                search=GeneticAlgorithm,
-                search_params=dict(mutation_factor=.25, mutation_probability=1),
-                actions=(0, 1))]
-
-    print('Initial: {%s}' % str(env.current_state))
+    env = World(initial_state=WordIndividual.random())
+    agent = Speller(environment=env, search=GeneticAlgorithm,
+                    search_params=dict(mutation_factor=.25,
+                                       mutation_probability=1,
+                                       max_evolution_duration=4))
+    env.agents = [agent]
 
     start = time.time()
 
     try:
         env.update()
-        print('Solution: {%s}' % str(env.current_state))
-
     except KeyboardInterrupt:
         pass
-
     finally:
-        search = env.agents[0].search
-
-        print('\nPopulation:')
-        print('\n'.join(str(p) for p in search.population_[:30]))
-
         print('\nTime elapsed: %.2f s' % (time.time() - start))
-        print('Cycles: %i' % search.cycle_)
 
 
 if __name__ == '__main__':
