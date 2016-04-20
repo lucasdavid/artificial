@@ -144,7 +144,6 @@ class State:
         raise NotImplementedError
 
 
-
 class GeneticState(State):
     """Genetic State.
 

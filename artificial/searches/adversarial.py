@@ -65,20 +65,11 @@ class Random(Adversarial):
 
     def search(self):
         self.started_at = time.time()
-
         state = self.root or self.agent.last_known_state.random()
-        depth = 0
 
-        while (state and depth < self.depth_limit and
-               time.time() - self.started_at < self.time_limit):
-            children = self.agent.predict(state)
-            state = (self.random_generator.choice(children)
-                     if children else None)
-            
-            depth += 1
-
-        self.solution_candidate_ = state
-
+        children = self.agent.predict(state)
+        self.solution_candidate_ = (self.random_generator.choice(children)
+                                    if children else None)
         return self
 
 

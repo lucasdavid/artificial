@@ -127,9 +127,7 @@ class GeneticAlgorithmTest(TestCase):
             self.agent, mutation_factor=.5, mutation_probability=1)
         solution = ga.search().solution_candidate_
 
-        # There is a solution.
-        self.assertIsNotNone(solution)
-
+        # Attributes were set as expected.
         self.assertEqual(ga.population_size_, 1000)
         self.assertEqual(ga.n_selected_, 500)
 
@@ -137,5 +135,25 @@ class GeneticAlgorithmTest(TestCase):
         self.assertIsNone(ga.offspring_)
         self.assertIsNone(ga.selected_)
 
-        # Got only three or less letters wrong.
+        # Found a solution.
+        self.assertIsNotNone(solution)
         self.assertEqual(solution.data, 'hello world')
+
+        ga = genetic.GeneticAlgorithm(
+            self.agent, natural_selection='elitism', max_evolution_duration=5,
+            mutation_factor=.5, mutation_probability=1)
+        self.assertIsNotNone(ga.search().solution_candidate_)
+
+    def test_raises_errors(self):
+        np.random.seed(0)
+
+        # Assert raises ValueError when parameters are incorrect.
+        with self.assertRaises(ValueError):
+            genetic.GeneticAlgorithm(self.agent, n_selected='all').search()
+        with self.assertRaises(ValueError):
+            (genetic.GeneticAlgorithm(self.agent, breeding_selection='rand0m')
+             .search())
+        with self.assertRaises(ValueError):
+            (genetic
+             .GeneticAlgorithm(self.agent, natural_selection='steady_state')
+             .search())

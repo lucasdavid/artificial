@@ -1,4 +1,5 @@
 import abc
+
 from . import base
 from .. import agents
 from ..base import helpers
@@ -11,10 +12,8 @@ class FringeBase(base.Base, metaclass=abc.ABCMeta):
     Fringes are, by default, `lists`, but can be freely overridden
     for other structures, such as `sets` or `PriorityQueues`.
 
-
     Attributes
     ----------
-
     fringe_ : list
         A collection of states in the search fringe.
 
@@ -47,9 +46,7 @@ class FringeBase(base.Base, metaclass=abc.ABCMeta):
         return self
 
     def extract(self):
-        """Fringe extraction policy.
-
-        """
+        """Fringe extraction policy"""
         raise NotImplementedError
 
     def expand(self, state):
@@ -59,6 +56,7 @@ class FringeBase(base.Base, metaclass=abc.ABCMeta):
         ----------
             state : (State)
                 State that should be expanded.
+
         """
         raise NotImplementedError
 
@@ -171,10 +169,8 @@ class AStar(UniformCost):
 class DepthFirst(FringeBase):
     """Depth First Search.
 
-
     Parameters
     ----------
-
     prevent_cycles : [False|'branch'|'tree'] (default=False)
         Prevent cyclical searches.
 
@@ -206,14 +202,6 @@ class DepthFirst(FringeBase):
         If None, no limit is imposed and original Depth First algorithm
         is executed.
 
-
-    Notes
-    -----
-
-    If limit parameter is not None, the state's `g` property is used
-    to assert its depth in the search tree. Users are then oblidge to
-    correctly
-
     """
 
     def __init__(self, agent, root=None, prevent_cycles=False, limit=None):
@@ -223,13 +211,6 @@ class DepthFirst(FringeBase):
         self.limit = limit
 
         self.last_expanded = None
-
-    def restart(self, root, limit=None):
-        super().restart(root=root)
-        self.limit = limit
-        self.last_expanded = None
-
-        return self
 
     def extract(self):
         previous = self.last_expanded
@@ -274,31 +255,28 @@ class IterativeDeepening(base.Base):
     iterative includes the left-side of the Natural set
     (i.e., 1, 2, 3, 4, ...), but not complete nor necessarily optimal.
 
-
     Parameters
     ----------
-
     prevent_cycles : [False|'branch'|'tree'] (default=False)
         Prevent cyclical searches.
 
         Options are:
-            False : classic Depth First Search. Algorithm will NOT keep
+            --- False : classic Depth First Search. Algorithm will NOT keep
             tab on repetitions and cycles may occur.
 
-            'branch' : repetitions in current branch will not be allowed.
+            --- 'branch' : repetitions in current branch will not be allowed.
             Requires :math:`O(2d)` memory, as references to predecessors and
             a set of states in the current path are kept.
 
-            'tree' : no repetitions are allowed. This option requires
-            :math:`O(b^d + d)`, being no better than Breadth-First search
-            in terms of memory requirement.
-            It can still perform better, though, given a problem domain
-            where solutions are "far" from the root and minimizing the
-            number of hops to the solution is not necessary (something
-            which is guaranteed by `BreadthFirst`).
+            --- 'tree' : no repetitions are allowed. This option requires
+            :math:`O(b^d + d)`, being no better than Breadth-First search in
+            terms of memory requirement. It can still perform better, though,
+            given a problem domain where solutions are "far" from the root and
+            minimizing the number of hops to the solution is not necessary
+            (something which is guaranteed by `BreadthFirst`).
 
     iterations : [array-like|range] (default=range(10))
-                list of limits passed to `DepthFirst`.
+        List of limits passed to `DepthFirst`.
 
     """
 
@@ -312,11 +290,10 @@ class IterativeDeepening(base.Base):
 
     def search(self):
         for limit in self.iterations:
-            self.depth_limited.restart(root=self.root, limit=limit)
-
+            self.depth_limited.limit = limit
+            self.depth_limited.restart(root=self.root)
             self.solution_candidate_ = (self.depth_limited.search()
                                         .solution_candidate_)
-
             if self.solution_candidate_:
                 break
 
