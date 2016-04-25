@@ -1,15 +1,20 @@
-import random
 import string
 import time
 
 import numpy as np
-
+import random
 from artificial import base, agents
 from artificial.searches.genetic import GeneticAlgorithm
 
+random_state = np.random.RandomState(0)
+
+search_params = dict(mutation_probability=.25,
+                     max_evolution_duration=10)
+
 
 class WordIndividual(base.GeneticState):
-    expected = 'i like cookies'
+    expected = 'hello world'
+    alphabet = list(string.ascii_lowercase + ' ')
 
     def h(self):
         return sum(1 if self.data[i] != self.expected[i] else 0
@@ -21,13 +26,11 @@ class WordIndividual(base.GeneticState):
             self.data[:cross_point] + other.data[cross_point:])
 
     def mutate(self, factor, probability):
-        m = np.random.rand(len(self.data)) < factor * probability
+        m = random_state.rand(len(self.data)) < probability
 
         if np.any(m):
             data = np.array(list(self.data))
-            data[m] = [random.choice(string.ascii_lowercase + ' ')
-                       for mutated in m if mutated]
-
+            data[m] = random_state.choice(self.alphabet, size=m.sum())
             self.data = ''.join(data)
 
         return self
@@ -41,8 +44,8 @@ class WordIndividual(base.GeneticState):
 
     @classmethod
     def random(cls):
-        return cls(''.join(random.choice(string.ascii_lowercase + ' ')
-                           for _ in WordIndividual.expected))
+        return cls(''.join(random_state.choice(cls.alphabet,
+                                               size=len(cls.expected))))
 
 
 class Speller(agents.UtilityBasedAgent):
@@ -63,9 +66,7 @@ class World(base.Environment):
 
         for a in self.agents:
             self.current_state = a.act()
-
-            print('\n'.join(str(p) for p in a.search.population_[10:15]))
-            print('...\nAgent found the solution: {%s}' % self.current_state)
+            print('Agent found the solution: {%s}' % self.current_state)
 
 
 def main():
@@ -75,11 +76,8 @@ def main():
 
     env = World(initial_state=WordIndividual.random())
     agent = Speller(environment=env, search=GeneticAlgorithm,
-                    search_params=dict(mutation_factor=.25,
-                                       mutation_probability=1,
-                                       max_evolution_duration=4))
+                    search_params=search_params)
     env.agents = [agent]
-
     start = time.time()
 
     try:

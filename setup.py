@@ -16,6 +16,6 @@ setup(
 
     url='https://github.com/lucasdavid/artificial',
     download_url='https://github.com/lucasdavid/artificial/archive/master.zip',
-    install_requires=['numpy', 'scipy', 'matplotlib'],
+    install_requires=['numpy', 'scipy'],
     tests_require=open('requirements-dev.txt').readlines(),
 )

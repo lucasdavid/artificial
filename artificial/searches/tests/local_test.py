@@ -1,11 +1,11 @@
-import random
 from unittest import TestCase
+
+import numpy as np
 
 from artificial import agents, base
 from artificial.searches.local import HillClimbing, LocalBeam
 
-
-random_generator = random.Random(0)
+random_state = np.random.RandomState(0)
 
 
 class _TState(base.State):
@@ -18,7 +18,7 @@ class _TState(base.State):
 
     @classmethod
     def random(cls):
-        return cls(random_generator.randint(-1000, 1000))
+        return cls(random_state.randint(-1000, 1000))
 
 
 class _TestEnvironment(base.Environment):
@@ -79,8 +79,7 @@ class HillClimbingTest(TestCase):
 
 class LocalBeamTest(TestCase):
     def setUp(self):
-        self.env = _TestEnvironment(_TState(0),
-                                    random_generator=random_generator)
+        self.env = _TestEnvironment(_TState(0))
         self.agent = _UtilityTestAgent(LocalBeam, self.env, actions=None)
 
     def test_sanity(self):

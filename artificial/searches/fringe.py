@@ -1,8 +1,13 @@
+"""Artificial Fringe Searches"""
+
+# Author: Lucas David -- <ld492@drexel.edu>
+# License: MIT (c) 2016
+
 import abc
 
 from . import base
 from .. import agents
-from ..base import helpers
+from ..utils import PriorityQueue
 
 
 class FringeBase(base.Base, metaclass=abc.ABCMeta):
@@ -94,7 +99,7 @@ class UniformCost(FringeBase):
         assert isinstance(agent, agents.UtilityBasedAgent), \
             'Uniform Cost Search requires an utility based agent.'
 
-        self.fringe_ = helpers.PriorityQueue()
+        self.fringe_ = PriorityQueue()
 
         if self.root:
             self.fringe_.add(self.root)
@@ -102,7 +107,7 @@ class UniformCost(FringeBase):
     def restart(self, root):
         super().restart(root=root)
 
-        self.fringe_ = helpers.PriorityQueue()
+        self.fringe_ = PriorityQueue()
         self.fringe_.add(self.root)
 
         return self

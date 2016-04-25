@@ -1,7 +1,13 @@
 from artificial import agents, base
 from artificial.searches import fringe as searches
 
-from artificial.base.helpers import Graph
+
+class Graph:
+    def __init__(self, nodes, edges=None, directed=False):
+        self.nodes = nodes
+        self.edges = edges or {}
+        self.n_nodes = len(nodes)
+        self.directed = directed
 
 
 class CityState(base.State):
@@ -13,7 +19,8 @@ class CityState(base.State):
         return 0
 
     def __str__(self):
-        return '%s, g: %d, h: %d' % (Romania.g.nodes[self.data], self.g, self.h())
+        return '%s, g: %d, h: %d' % (
+        Romania.g.nodes[self.data], self.g, self.h())
 
 
 class Romania(base.Environment):
@@ -57,8 +64,8 @@ class Romania(base.Environment):
             current = self.current_state.data
 
             if next_city is None or \
-               current == next_city or \
-               next_city not in Romania.g.edges[current]:
+                            current == next_city or \
+                            next_city not in Romania.g.edges[current]:
                 # Invalid transition or non-existent road.
                 continue
 

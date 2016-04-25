@@ -1,43 +1,43 @@
-import random
 import string
+import time
 from unittest import TestCase
 
 import numpy as np
-
 from artificial import base, agents
 from artificial.searches import genetic
+from nose_parameterized import parameterized
 
-random_generator = random.Random(0)
+random_state = np.random.RandomState(0)
 
 
 # Classes for Hello World spelling problem.
 class _S(base.GeneticState):
     expected = 'hello world'
+    alphabet = list(string.ascii_lowercase + ' ')
 
     def h(self):
         return sum((1 if self.data[i] != self.expected[i] else 0
                     for i in range(min(len(self.data), len(self.expected)))))
 
     def cross(self, other):
-        cross_point = random.randint(0, len(_S.expected))
+        cross_point = random_state.randint(0, len(_S.expected))
         return _S(self.data[:cross_point] + other.data[cross_point:])
 
     def mutate(self, factor, probability):
-        m = np.random.rand(len(self.data)) < factor * probability
+        # We ignore factor, as we are dealing with binary genes.
+        m = random_state.rand(len(self.data)) < probability
 
         if np.any(m):
             d = np.array(list(self.data))
-            d[m] = [random.choice(string.ascii_lowercase + ' ')
-                    for mutated in m if mutated]
-
+            d[m] = random_state.choice(self.alphabet, size=m.sum())
             self.data = ''.join(d)
 
         return self
 
     @classmethod
     def random(cls):
-        return cls(''.join(random.choice(string.ascii_lowercase + ' ')
-                           for _ in cls.expected))
+        return cls(''.join(random_state.choice(cls.alphabet,
+                                               size=len(cls.expected))))
 
     @property
     def is_goal(self):
@@ -45,33 +45,36 @@ class _S(base.GeneticState):
 
 
 class _A(agents.UtilityBasedAgent):
-    pass
+    def predict(self, state):
+        """Predicts nothing."""
 
 
 class _E(base.Environment):
     state_class_ = _S
+
+    def update(self):
+        """Updates nothing."""
 
 
 # Classes for a simple numerical optimization.
 class _S2(base.GeneticState):
     @classmethod
     def random(cls):
-        return _S2([random_generator.randint(0, 1) for _ in range(100)])
+        return _S2([random_state.randint(0, 2) for _ in range(10)])
 
     def mutate(self, factor, probability):
-        n_mutations = round(factor * len(self.data))
+        m = random_state.rand(len(self.data)) < probability
 
-        for _ in range(n_mutations):
-            if random_generator.random() > probability:
-                continue
+        if m.any():
+            data = np.array(self.data)
+            data[m] = 1 - data[m]
 
-            index = random_generator.randint(0, len(self.data) - 1)
-            self.data[index] = 1 - self.data[index]
+            self.data = data.tolist()
 
         return self
 
     def cross(self, other):
-        cross_point = random_generator.randint(0, len(self.data))
+        cross_point = random_state.randint(0, len(self.data))
         return _S2(self.data[:cross_point] + self.data[cross_point:])
 
     def h(self):
@@ -86,23 +89,27 @@ class _S2(base.GeneticState):
 class _E2(base.Environment):
     state_class_ = _S2
 
+    def update(self):
+        """Updates nothing."""
+
 
 class GeneticAlgorithmTest(TestCase):
     def setUp(self):
-        random_generator = random.Random(0)
-
-        self.env = _E(_S('UkDmEmaPCvK'),
-                      random_generator=random_generator)
+        self.env = _E(_S('UkDmEmaPCvK'))
         self.agent = _A(search=genetic.GeneticAlgorithm,
                         environment=self.env,
                         actions=None)
 
+        self.random_state = np.random.RandomState(0)
+
     def test_sanity(self):
-        ga = genetic.GeneticAlgorithm(self.agent)
+        ga = genetic.GeneticAlgorithm(self.agent,
+                                      random_state=self.random_state)
         self.assertIsNotNone(ga)
 
     def test_generate_population(self):
-        ga = genetic.GeneticAlgorithm(self.agent, max_evolution_cycles=1)
+        ga = genetic.GeneticAlgorithm(self.agent, max_evolution_cycles=1,
+                                      random_state=self.random_state)
         ga.search()
         self.assertEqual(ga.population_size_, 1000)
 
@@ -112,40 +119,31 @@ class GeneticAlgorithmTest(TestCase):
         self.assertIsNone(ga.offspring_)
 
         ga = genetic.GeneticAlgorithm(self.agent, population_size=20,
-                                      max_evolution_cycles=1)
+                                      max_evolution_cycles=1,
+                                      random_state=self.random_state)
         ga.search()
         self.assertEqual(ga.population_size_, 20)
 
         ga = genetic.GeneticAlgorithm(self.agent,
                                       max_evolution_cycles=10,
                                       max_evolution_duration=1,
-                                      n_jobs=1)
+                                      n_jobs=1,
+                                      random_state=self.random_state)
         ga.search()
         self.assertGreater(ga.population_size_, 100)
 
-        with self.assertRaises(ValueError):
-            (genetic
-             .GeneticAlgorithm(self.agent, population_size=.5,
-                               max_evolution_cycles=1)
-             .search())
+    @parameterized.expand([
+        'random', 'tournament', 'roulette', 'gattaca'
+    ])
+    def test_select_for_breeding(self, method):
+        ga = genetic.GeneticAlgorithm(self.agent,
+                                      n_selected=20,
+                                      breeding_selection=method,
+                                      max_evolution_cycles=1)
 
-    def test_select_for_breeding(self):
-        for method in ('random', 'tournament', 'roulette', 'gattaca'):
-            ga = genetic.GeneticAlgorithm(self.agent,
-                                          n_selected=20,
-                                          breeding_selection=method,
-                                          max_evolution_cycles=1)
-
-            (ga.search_start().generate_population().cycle_start()
-             .select_for_breeding())
-            self.assertEqual(len(ga.selected_), 20)
-
-        with self.assertRaises(ValueError):
-            ga = genetic.GeneticAlgorithm(self.agent,
-                                          population_size=100,
-                                          breeding_selection='tournament',
-                                          tournament_size=200)
-            ga.search()
+        (ga.search_start().generate_population().cycle_start()
+         .select_for_breeding())
+        self.assertEqual(len(ga.selected_), 20)
 
     def test_breed(self):
         ga = genetic.GeneticAlgorithm(self.agent,
@@ -156,57 +154,89 @@ class GeneticAlgorithmTest(TestCase):
         self.assertEqual(len(ga.population_), 100)
         self.assertEqual(len(ga.offspring_), 50)
 
-    def test_search(self):
-        np.random.seed(0)
-
-        ga = genetic.GeneticAlgorithm(
-            self.agent, mutation_factor=.5, mutation_probability=1)
+    @parameterized.expand([
+        (dict(mutation_probability=.2), dict(population_size_=1000,
+                                             n_selected_=1000)),
+    ])
+    def test_search(self, params, expected):
+        ga = genetic.GeneticAlgorithm(self.agent,
+                                      random_state=self.random_state, **params)
         solution = ga.search().solution_candidate_
 
         # Attributes were set as expected.
-        self.assertEqual(ga.population_size_, 1000)
-        self.assertEqual(ga.n_selected_, 1000)
+        for key, value in expected.items():
+            self.assertEqual(getattr(ga, key), value)
 
         # Assert clean-up was made.
         self.assertIsNone(ga.offspring_)
         self.assertIsNone(ga.selected_)
 
-        # Found a solution.
+        # Assert it eventually finds a solution.
         self.assertIsNotNone(solution)
         self.assertEqual(solution.data, 'hello world')
 
-        ga = genetic.GeneticAlgorithm(
-            self.agent, natural_selection='elitism', max_evolution_duration=5,
-            mutation_factor=.5, mutation_probability=1)
-        self.assertIsNotNone(ga.search().solution_candidate_)
+    @parameterized.expand([
+        (dict(natural_selection='elitism', max_evolution_duration=5,
+              mutation_probability=.2), .5),
+        (dict(natural_selection='random', max_evolution_duration=5,
+              mutation_probability=.2), .5),
+        (dict(max_evolution_duration=5, mutation_probability=.2,
+              n_jobs=4, debug=True), 4)
+    ])
+    def test_search_duration_constraint(self, params, acceptable_delta):
+        ga = genetic.GeneticAlgorithm(self.agent,
+                                      random_state=self.random_state,
+                                      **params)
 
-        ga = genetic.GeneticAlgorithm(
-            self.agent, natural_selection='random', max_evolution_duration=5,
-            mutation_factor=.5, mutation_probability=1)
-        self.assertIsNotNone(ga.search().solution_candidate_)
+        elapsed = time.time()
+        ga.search()
+        elapsed = time.time() - elapsed
+        delta = abs(elapsed - params['max_evolution_duration'])
+
+        # Assert that the duration constraint was respected.
+        self.assertLess(delta, acceptable_delta)
+        self.assertIsNotNone(ga.solution_candidate_)
 
     def test_preemption_by_genetic_similarity(self):
-        a = _A(search=genetic.GeneticAlgorithm,
-               environment=_E2(_S2(100 * [0])),
-               actions=None)
+        expected_variability = .4
 
-        ga = (genetic.GeneticAlgorithm(a, min_genetic_similarity=.01,
-                                       max_evolution_duration=60)
-              .search())
+        a = _A(search=genetic.GeneticAlgorithm, environment=_E2())
+
+        ga = genetic.GeneticAlgorithm(
+            a, max_evolution_duration=60,
+            min_genetic_similarity=expected_variability,
+            population_size=50,
+            mutation_probability=0,
+            random_state=self.random_state).search()
+
+        # Assert that the last population's variability is smaller
+        # than the `min_genetic_similarity` parameter passed.
+        self.assertLessEqual(ga.variability_, expected_variability)
 
         self.assertIsNotNone(ga.solution_candidate_)
-        self.assertEqual(a.utility(ga.solution_candidate_), 100)
+        self.assertGreaterEqual(a.utility(ga.solution_candidate_), 7)
 
-    def test_raises_errors(self):
-        np.random.seed(0)
+    def test_genetic_similarity_raises_error(self):
+        ga = genetic.GeneticAlgorithm(
+            self.agent, mutation_factor=.5, mutation_probability=1,
+            max_evolution_duration=4, min_genetic_similarity=.5,
+            random_state=self.random_state)
 
+        with self.assertRaises(RuntimeError):
+            ga.genetic_similarity()
+
+    @parameterized.expand([
+        (dict(n_selected='all'),),
+        (dict(breeding_selection='rand0m'),),
+        (dict(natural_selection='steady_state'),),
+        (dict(population_size=100, breeding_selection='tournament',
+              tournament_size=200),),
+        (dict(population_size=.5, max_evolution_cycles=1),),
+    ])
+    def test_raises_value_errors(self, params):
+        print(params)
         # Assert raises ValueError when parameters are incorrect.
         with self.assertRaises(ValueError):
-            genetic.GeneticAlgorithm(self.agent, n_selected='all').search()
-        with self.assertRaises(ValueError):
-            (genetic.GeneticAlgorithm(self.agent, breeding_selection='rand0m')
-             .search())
-        with self.assertRaises(ValueError):
-            (genetic
-             .GeneticAlgorithm(self.agent, natural_selection='steady_state')
-             .search())
+            genetic.GeneticAlgorithm(self.agent,
+                                     random_state=self.random_state,
+                                     **params).search()
