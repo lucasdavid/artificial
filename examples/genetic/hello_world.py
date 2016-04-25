@@ -13,7 +13,7 @@ class WordIndividual(base.GeneticState):
 
     def h(self):
         return sum(1 if self.data[i] != self.expected[i] else 0
-                    for i in range(min(len(self.data), len(self.expected))))
+                   for i in range(min(len(self.data), len(self.expected))))
 
     def cross(self, other):
         cross_point = random.randint(0, len(WordIndividual.expected))
@@ -52,7 +52,7 @@ class Speller(agents.UtilityBasedAgent):
                 .solution_candidate_)
 
     def predict(self, state):
-        pass
+        raise RuntimeError('Sorry! I don\'t know how to predict states!')
 
 
 class World(base.Environment):

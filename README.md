@@ -73,7 +73,7 @@ class Speller(agents.UtilityBasedAgent):
     def act(self):
         # We aren't really interest in acting over the world, but more in
         # finding solutions. Hence simply returns the solution candidate,
-        # which is the fittest individual, for the `GeneticAlgorithm` case.
+        # which is the fittest individual for the `GeneticAlgorithm` case.
         return self.search().solution_candidate_
 
 ```

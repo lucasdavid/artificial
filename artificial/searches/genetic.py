@@ -1,7 +1,13 @@
+"""Genetic algorithm for problem solving"""
+
+# Author: Lucas David -- <ld492@drexel.edu>
+# License: MIT (c) 2016
+
 import multiprocessing
 import time
 
 import numpy as np
+from scipy.spatial import distance
 
 from . import base
 from .. import agents
@@ -27,6 +33,11 @@ class GeneticAlgorithm(base.Base):
         If infinity, no bound is set and evolution will continue
         regardless the amount of time spent on the process.
 
+    min_genetic_similarity : float (default=0)
+        The lower bound for individuals' genetic similarity, in percentage.
+        If 0, no bound is set and evolution continues regardless the
+        individuals genetic similarity.
+
     breeding_selection : ['random'|'tournament'|'roulette'|'gattaca']
         (default='roulette')
         The method employed when selecting individuals for breeding.
@@ -45,10 +56,11 @@ class GeneticAlgorithm(base.Base):
                 Each individual `i` has an associated rate
                 :math:`\frac{U_i}{\sum_{k=0}{|population|} U_k}`
 
-                It's worth mentioning that "windowing" is performed: every
-                individual's added to its utility the value :math:`\min_k U_k`
-                and utilities that assume negative values are then fixed,
-                entailing a correct probability distribution.
+                It's worth mentioning that "windowing" is performed if any
+                negative utilities happen to appear: every individual has added
+                to their utility the value :math:`\min_k U_k` and utilities
+                that assume negative values are then fixed, entailing a correct
+                probability distribution.
 
             --- 'gattaca'
                 Individuals are paired up accordingly to their "rank" (fitness)
@@ -57,7 +69,7 @@ class GeneticAlgorithm(base.Base):
                 Note: this option is just a joke. Don't expect great results
                 from this method.
 
-    n_selected : [int|float] (default=.5)
+    n_selected : [int|float] (default=1.0)
         Number of individuals selected for breeding. If `int`, exactly
         `n_selected` individuals are selected. If `float`,
         `int(n_selected * self.population_size_)` individuals are
@@ -86,6 +98,10 @@ class GeneticAlgorithm(base.Base):
         evolution process.
 
         Options are:
+            --- 'random'
+                `population_size_` individuals are randomly selected from all
+                individuals in population and the offspring.
+
             --- 'steady-state'
                 `M` individuals in the current generation are selected to
                 replace the `M` worse individuals from the previous generation.
@@ -100,28 +116,31 @@ class GeneticAlgorithm(base.Base):
 
     Attributes
     ----------
-    population_size_ : int
-        Real population size.
+    cycle_: int
+        The number of evolution cycles that the search went through.
+
+    generations_average_utility_: float
+        The average utilities in every single generation.
+
+    generations_highest_utility_: float
+        The highest utilities in every single generation.
+
+    generations_lowest_utility_: float
+        The lowest utilities in every single generation.
 
     n_selected_ : int
         Real number of individuals selected for breeding.
-
-    tournament_size_ : int
-        Real tournament size. Assumes value `None` when
-        `breeding_selection != 'tournament'`,
-
-    population_ : GeneticState's list
-        Current set of individuals.
-
-    selected_ : GeneticState's list
-        Individuals selected for breeding in the current generation.
-        This option is cleared after every generation's natural selection
-        process.
 
     offspring_ : GeneticState's list
         Individuals created on this generation.
         This option is cleared after every generation's natural selection
         process.
+
+    population_ : GeneticState's list
+        Current set of individuals.
+
+    population_size_ : int
+        Real population size.
 
     solution_candidate_ : State-like object
         Fittest individual from all iterations. Additionally, we ought to
@@ -129,14 +148,27 @@ class GeneticAlgorithm(base.Base):
         `population_` batch, although this is true for
         `breeding_selection == 'elitism'` option.
 
+    selected_ : GeneticState's list
+        Individuals selected for breeding in the current generation.
+        This option is cleared after every generation's natural selection
+        process.
+
+    tournament_size_ : int
+        Real tournament size. Assumes value `None` when
+        `breeding_selection != 'tournament'`,
+
+    variability_: float
+        The variability of the last evolved population.
+
     """
 
     def __init__(self, agent,
                  population_size='auto',
                  max_evolution_cycles=np.inf,
                  max_evolution_duration=np.inf,
+                 min_genetic_similarity=0,
                  breeding_selection='roulette',
-                 n_selected=.5,
+                 n_selected=1.0,
                  tournament_size=.5,
                  mutation_factor=.05,
                  mutation_probability=.05,
@@ -150,6 +182,7 @@ class GeneticAlgorithm(base.Base):
         self.population_size = population_size
         self.max_evolution_cycles = max_evolution_cycles
         self.max_evolution_duration = max_evolution_duration
+        self.min_genetic_similarity = min_genetic_similarity
         self.breeding_selection = breeding_selection
         self.n_selected = n_selected
         self.tournament_size = tournament_size
@@ -164,6 +197,11 @@ class GeneticAlgorithm(base.Base):
         self.population_size_ = self.population_ = self.tournament_size_ = None
         self.selected_ = self.n_selected_ = self.offspring_ = None
         self.started_at_ = None
+        self.variability_ = 0
+        self.generations_variability_ = []
+        self.generations_average_utility_ = []
+        self.generations_highest_utility_ = []
+        self.generations_lowest_utility_ = []
         self.cycle_ = 0
 
     def search(self):
@@ -226,14 +264,17 @@ class GeneticAlgorithm(base.Base):
                 # Finally, lower bound value by 100.
                 self.population_size_ = max(
                     100,
-                    int(.9 * n_jobs * duration / utility_elapsed / cycles)
-                )
+                    int(.9 * n_jobs * duration / utility_elapsed / cycles))
         else:
             raise ValueError('Illegal value for population size {%i}.'
                              % self.population_size)
 
         if self.natural_selection == 'elitism':
-            self.n_selected_ = self.population_size_ - 1
+            # On elitist natural selection, every individual is replaced by the
+            # offspring, saved by the fittest. We therefore must select
+            # `2 * (population_size_ - 1)` individuals, which will generate an
+            # offspring of exactly `population_size_ - 1` new samples.
+            self.n_selected_ = 2 * (self.population_size_ - 1)
         elif isinstance(self.n_selected, int):
             self.n_selected_ = self.n_selected
         elif isinstance(self.n_selected, float):
@@ -241,6 +282,15 @@ class GeneticAlgorithm(base.Base):
         else:
             raise ValueError('Illegal value for n_selected {%s}'
                              % str(self.n_selected))
+
+        if self.breeding_selection not in ('random', 'tournament', 'roulette',
+                                           'gattaca'):
+            raise ValueError('Illegal value for breeding selection method '
+                             '{%s}.' % self.breeding_selection)
+
+        if self.natural_selection not in ('random', 'steady-state', 'elitism'):
+            raise ValueError('Illegal value for natural selection method {%s}'
+                             % self.natural_selection)
 
         if self.breeding_selection == 'tournament':
             self.tournament_size_ = (self.tournament_size
@@ -252,12 +302,26 @@ class GeneticAlgorithm(base.Base):
                 raise ValueError('Illegal value for tournament size {%i}.'
                                  % self.tournament_size_)
 
+        self.generations_average_utility_ = []
+        self.generations_highest_utility_ = []
+        self.generations_lowest_utility_ = []
+        self.generations_variability_ = []
+        self.variability_ = None
+
         return self
 
     def search_dispose(self):
+        self.population_ = None
+        self.selected_ = self.offspring_ = None
         return self
 
     def cycle_start(self):
+        utilities = [self.agent.utility(i) for i in self.population_]
+        self.generations_average_utility_.append(sum(utilities) /
+                                                 self.population_size_)
+        self.generations_highest_utility_.append(max(utilities))
+        self.generations_lowest_utility_.append(min(utilities))
+
         return self
 
     def cycle_dispose(self):
@@ -314,13 +378,17 @@ class GeneticAlgorithm(base.Base):
         """
         return (time.time() - self.started_at_ < self.max_evolution_duration and
                 self.cycle_ < self.max_evolution_cycles and
-                not self.solution_candidate_.is_goal)
+                not self.solution_candidate_.is_goal and
+                (self.min_genetic_similarity == 0 or
+                 self.min_genetic_similarity <= self.genetic_similarity()))
 
     def select_for_breeding(self):
         """Breeding Selection.
 
-        Select individuals for breeding by adding them to the
-        `selected_` array.
+        Select individuals for breeding by adding them to the `selected_`
+        array. The order in which the individuals are in the array determines
+        the breeding pairs (`2i-th` and `(2i+1)-th` are breeding partners, for
+        every :math:`i \in [0, n_selected_ / 2)`).
 
         Returns
         -------
@@ -332,20 +400,20 @@ class GeneticAlgorithm(base.Base):
                                               size=self.n_selected_)
 
         elif self.breeding_selection == 'tournament':
-            self.selected_ = [
-                max(np.random.choice(self.population_,
-                                     size=self.tournament_size_),
-                    key=lambda i: -self.agent.utility(i))
-                for _ in range(self.n_selected_)
-            ]
+            self.selected_ = [max(np.random.choice(self.population_,
+                                                   size=self.tournament_size_),
+                                  key=lambda i: -self.agent.utility(i))
+                              for _ in range(self.n_selected_)]
 
         elif self.breeding_selection == 'roulette':
-            # Perform windowing by adding the minimum value to all individuals'
-            # fitness. If there are any negative utilities, they will vanish
-            # and the probabilities will sum to 1.
+            # If there are negative values, perform windowing by adding the
+            # minimum value to all individuals' fitness. Any negative utilities
+            # will vanish and the probabilities will sum to 1.
             p = np.array([self.agent.utility(i)
                           for i in self.population_]).astype(float)
-            p -= np.min(p)
+            minimum = np.min(p)
+            if minimum < 0:
+                p -= minimum
             p /= np.sum(p)
 
             self.selected_ = np.random.choice(self.population_,
@@ -354,10 +422,6 @@ class GeneticAlgorithm(base.Base):
         elif self.breeding_selection == 'gattaca':
             self.population_.sort(key=lambda i: -self.agent.utility(i))
             self.selected_ = self.population_[:self.n_selected_]
-
-        else:
-            raise ValueError('Illegal value for breeding selection method '
-                             '{%s}.' % self.breeding_selection)
 
         return self
 
@@ -369,10 +433,8 @@ class GeneticAlgorithm(base.Base):
             while True:
                 a, b = next(selected), next(selected)
                 self.offspring_.append(
-                    a
-                    .cross(b)
-                    .mutate(self.mutation_factor,
-                            self.mutation_probability))
+                    a.cross(b).mutate(self.mutation_factor,
+                                      self.mutation_probability))
 
         except StopIteration:
             pass
@@ -387,15 +449,39 @@ class GeneticAlgorithm(base.Base):
                                        self.solution_candidate_,
                                        key=lambda i: self.agent.utility(i))
 
-        if self.natural_selection == 'steady-state':
+        if self.natural_selection == 'random':
+            self.population_ += self.offspring_
+            np.random.shuffle(self.population_)
+            self.population_ = self.population_[:self.population_size_]
+
+        elif self.natural_selection == 'steady-state':
             self.population_ = (self.population_[:-len(self.offspring_)] +
                                 self.offspring_)
 
         elif self.natural_selection == 'elitism':
             self.population_ = self.population_[:1] + self.offspring_
 
-        else:
-            raise ValueError('Illegal option for natural selection {%s}'
-                             % self.natural_selection)
-
         return self
+
+    def genetic_similarity(self):
+        if not self.population_:
+            raise ValueError('Cannot compute genetic similarity of empty '
+                             'population. Are you calling genetic_similarity'
+                             'method before searching?')
+
+        individuals = np.array([i.data for i in self.population_])
+
+        centroid = (np.sum(individuals, axis=0).astype(float) /
+                    individuals.shape[0])
+
+        # Average distance from the centroid, relative to the maximum variance
+        # (all genes being different).
+        # This assumes that genes assume integer values in {0, 1} set,
+        # and it should be improved. :-(
+        self.variability_ = np.mean(
+            distance.cdist(individuals, np.array([centroid])) /
+            np.sqrt(individuals.shape[1]))
+
+        self.generations_variability_.append(self.variability_)
+
+        return self.variability_
