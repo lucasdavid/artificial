@@ -1,9 +1,12 @@
-"""Genetic algorithm for problem solving"""
+"""Genetic Algorithm for Problem Solving."""
 
 # Author: Lucas David -- <ld492@drexel.edu>
 # License: MIT (c) 2016
 
+import math
 import multiprocessing
+import queue
+import threading
 import time
 
 import numpy as np
@@ -18,28 +21,28 @@ class GeneticAlgorithm(base.Base):
 
     Parameters
     ----------
-    agent : inherited
+    agent: inherited
 
-    population_size : [int|'auto'] (default='auto')
+    population_size: [int|'auto'], default='auto'
         The size of the population to be kept in memory.
 
-    max_evolution_cycles : [int, np.inf] (default=np.inf]
+    max_evolution_cycles: [int, np.inf], default=np.inf
         The upper bound for evolution cycles, in cycle count.
         If infinity, no bound is set and evolution cycles won't
         be directly a factor for the evolution process stop.
 
-    max_evolution_duration : float (default=np.inf)
+    max_evolution_duration: float, default=np.inf
         The upper bound for evolution duration, in seconds.
         If infinity, no bound is set and evolution will continue
         regardless the amount of time spent on the process.
 
-    min_genetic_similarity : float (default=0)
+    min_genetic_similarity: float, default=0
         The lower bound for individuals' genetic similarity, in percentage.
         If 0, no bound is set and evolution continues regardless the
         individuals genetic similarity.
 
-    breeding_selection : ['random'|'tournament'|'roulette'|'gattaca']
-        (default='roulette')
+    breeding_selection: ['random'|'tournament'|'roulette'|'gattaca'],
+        default='roulette'
         The method employed when selecting individuals for breeding.
 
         Options are:
@@ -54,11 +57,11 @@ class GeneticAlgorithm(base.Base):
 
             --- 'roulette'
                 Each individual `i` has an associated rate
-                :math:`\frac{U_i}{\sum_{k=0}{|population|} U_k}`
+               :math:`\frac{U_i}{\sum_{k=0}{|population|} U_k}`
 
                 It's worth mentioning that "windowing" is performed if any
                 negative utilities happen to appear: every individual has added
-                to their utility the value :math:`\min_k U_k` and utilities
+                to their utility the value:math:`\min_k U_k` and utilities
                 that assume negative values are then fixed, entailing a correct
                 probability distribution.
 
@@ -69,7 +72,7 @@ class GeneticAlgorithm(base.Base):
                 Note: this option is just a joke. Don't expect great results
                 from this method.
 
-    n_selected : [int|float] (default=1.0)
+    n_selected: [int|float], default=1.0
         Number of individuals selected for breeding. If `int`, exactly
         `n_selected` individuals are selected. If `float`,
         `int(n_selected * self.population_size_)` individuals are
@@ -79,7 +82,7 @@ class GeneticAlgorithm(base.Base):
         `population_size_ -1` when `natural_selection` chosen is 'elitism',
         as this procedure must always keep only the fittest of every iteration.
 
-    tournament_size : [int|float] (default=.5)
+    tournament_size: [int|float], default=.5
         Number of individuals fighting in a single tournament. If `int`,
         exactly `tournament_size` individuals are selected. If `float`,
         `int(n_selected * self.population_size_)` individuals are
@@ -87,13 +90,18 @@ class GeneticAlgorithm(base.Base):
 
         This parameter is ignored when `breeding_selection != 'tournament'`.
 
-    mutation_factor : float (default=.05)
-        How many genes of a given individual are susceptible to mutation.
+    mutation_factor: float, default=.05
+        If the problem at hand accepts many different values for genes, and
+        said values are enumerable, `mutation_factor` describes how lengthly
+        a gene is affected by mutation.
 
-     mutation_probability : float (default=.05)
+        For instance, a gene is "completely" affected if `mutation_factor == 1`,
+        or "loosely" or "slightly" affected for factors closest to 0.
+
+    mutation_probability: float, default=.05
         The probability of a given gene of a individual to mutate.
 
-    natural_selection : ['steady-state', 'elitism'] (default='steady-state')
+    natural_selection: ['steady-state', 'elitism'], default='steady-state'
         The method employed when selecting which individuals will survive the
         evolution process.
 
@@ -110,50 +118,59 @@ class GeneticAlgorithm(base.Base):
                 All individuals from the previous generation are killed, except
                 for the fittest, which replaces the worse in the current one.
 
-    n_jobs : int (default=1)
+    n_jobs: int, default=1
         Number of jobs to be executed in parallel. If `-1`, execute exactly
         `cpu_count` jobs.
+
+    debug: bool, default=False
+        Signals if current execution is in debugging mode. If True, statistics
+        such as average utility or variability are kept, requiring
+        :math:`O(cycle_)` of memory.
+
+    random_state: RandomState object, default=None
+        RandomState object used to control randomness of the process.
+        If None, no seed is passed and the default is used.
 
     Attributes
     ----------
     cycle_: int
         The number of evolution cycles that the search went through.
 
-    generations_average_utility_: float
+    average_utility_: float
         The average utilities in every single generation.
 
-    generations_highest_utility_: float
+    highest_utility_: float
         The highest utilities in every single generation.
 
-    generations_lowest_utility_: float
+    lowest_utility_: float
         The lowest utilities in every single generation.
 
-    n_selected_ : int
+    n_selected_: int
         Real number of individuals selected for breeding.
 
-    offspring_ : GeneticState's list
+    offspring_: GeneticState's list
         Individuals created on this generation.
         This option is cleared after every generation's natural selection
         process.
 
-    population_ : GeneticState's list
+    population_: GeneticState's list
         Current set of individuals.
 
-    population_size_ : int
+    population_size_: int
         Real population size.
 
-    solution_candidate_ : State-like object
+    solution_candidate_: State-like object
         Fittest individual from all iterations. Additionally, we ought to
         mention that `fittest_` isn't necessarily contained in the last
         `population_` batch, although this is true for
         `breeding_selection == 'elitism'` option.
 
-    selected_ : GeneticState's list
+    selected_: GeneticState's list
         Individuals selected for breeding in the current generation.
         This option is cleared after every generation's natural selection
         process.
 
-    tournament_size_ : int
+    tournament_size_: int
         Real tournament size. Assumes value `None` when
         `breeding_selection != 'tournament'`,
 
@@ -161,6 +178,106 @@ class GeneticAlgorithm(base.Base):
         The variability of the last evolved population.
 
     """
+
+    class _Worker(threading.Thread):
+        """Genetic search process inner worker.
+
+        Parameters
+        ----------
+        worker_id: int
+            The id of the current worker. This will later be used
+            to automatically perform data division.
+
+        manager: GeneticAlgorithm object-like
+            The `GeneticAlgorithm` instance to which this worker belong.
+
+        """
+
+        def __init__(self, worker_id, manager):
+            # Use daemon option, as we want to
+            # make the disposing process async.
+            super().__init__(daemon=True)
+
+            self.id = worker_id
+            self.manager = manager
+
+        def run(self):
+            while True:
+                task = self.manager.tasks.get()
+
+                if task is None:
+                    # `None` is our safe word. Shutting down...
+                    break
+
+                # Task is a method in _Worker class. How convenient!
+                # Simply execute the method.
+                try:
+                    getattr(self, task)()
+                finally:
+                    self.manager.tasks.task_done()
+
+        def divide_load(self, collection_size):
+            """Divide the workload and return probe share.
+
+            The workload is equality divided between the probes, except by the
+            last which might receive a smaller load if the `collection_size`
+            isn't divisible by the `manager.n_jobs_`.
+
+            Example
+            -------
+            If `GeneticAlgorithm(population_size=503, n_jobs=4)` were created,
+            workload division would happen as follows:
+
+            * _Worker #0: 126
+            * _Worker #1: 126
+            * _Worker #3: 126
+            * _Worker #4: 125
+
+            """
+            group_size = math.ceil(collection_size / self.manager.n_jobs_)
+
+            if self.id == self.manager.n_jobs_ - 1:
+                # If last worker, reduce the remaining individuals, as they
+                # were added by ceiling the division above.
+                group_size -= collection_size % self.manager.n_jobs_
+
+            return group_size
+
+        def generate_population(self):
+            state_c = self.manager.agent.environment.state_class_
+
+            # Divide the load and find how many individuals should it spawn.
+            group_size = self.divide_load(self.manager.population_size_)
+
+            # Generate population randomly.
+            group = [state_c.random() for _ in range(group_size)]
+
+            with self.manager.lock:
+                self.manager.population_ += group
+
+        def breed(self):
+            i, size = self.id, self.divide_load(self.manager.n_selected_)
+
+            selected = self.manager.selected_
+            selected = iter(selected[i * size:(i + 1) * size])
+
+            group = []
+
+            try:
+                while True:
+                    a, b = next(selected), next(selected)
+                    c = a.cross(b).mutate(self.manager.mutation_factor,
+                                          self.manager.mutation_probability)
+
+                    group.append(c)
+
+            except StopIteration:
+                pass
+            except:
+                raise
+            finally:
+                with self.manager.lock:
+                    self.manager.offspring_ += group
 
     def __init__(self, agent,
                  population_size='auto',
@@ -173,7 +290,9 @@ class GeneticAlgorithm(base.Base):
                  mutation_factor=.05,
                  mutation_probability=.05,
                  natural_selection='steady-state',
-                 n_jobs=1):
+                 n_jobs=1,
+                 debug=False,
+                 random_state=None):
         super().__init__(agent=agent)
 
         assert isinstance(agent, agents.UtilityBasedAgent), \
@@ -186,22 +305,29 @@ class GeneticAlgorithm(base.Base):
         self.breeding_selection = breeding_selection
         self.n_selected = n_selected
         self.tournament_size = tournament_size
-
         self.mutation_factor = mutation_factor
         self.mutation_probability = mutation_probability
-
         self.natural_selection = natural_selection
-
         self.n_jobs = n_jobs
+        self.debug = debug
+        self.random_state = random_state or np.random.RandomState()
 
+        # Interns.
+        self.workers = None
+        self.tasks = None
+        self.lock = threading.Lock()
+
+        # Properties.
         self.population_size_ = self.population_ = self.tournament_size_ = None
         self.selected_ = self.n_selected_ = self.offspring_ = None
-        self.started_at_ = None
+        self.started_at_ = self.n_jobs_ = None
+
+        # Statistics.
+        self.generations_variability_ = None
+        self.average_utility_ = None
+        self.highest_utility_ = None
+        self.lowest_utility_ = None
         self.variability_ = 0
-        self.generations_variability_ = []
-        self.generations_average_utility_ = []
-        self.generations_highest_utility_ = []
-        self.generations_lowest_utility_ = []
         self.cycle_ = 0
 
     def search(self):
@@ -230,6 +356,15 @@ class GeneticAlgorithm(base.Base):
 
         while self.continue_evolving():
             self.cycle_ += 1
+
+            if self.debug:
+                if self.max_evolution_cycles:
+                    e = self.max_evolution_cycles // 10
+                    if self.cycle_ % e == 0:
+                        print('Cycle %i of %i (%.2f%%).'
+                              % (self.cycle_, self.max_evolution_cycles,
+                                 self.cycle_/self.max_evolution_cycles))
+
             self.evolve()
 
         self.search_dispose()
@@ -237,6 +372,10 @@ class GeneticAlgorithm(base.Base):
         return self
 
     def search_start(self):
+        self.n_jobs_ = (self.n_jobs
+                        if self.n_jobs > 0
+                        else multiprocessing.cpu_count())
+
         if isinstance(self.population_size, int):
             self.population_size_ = self.population_size
 
@@ -246,25 +385,23 @@ class GeneticAlgorithm(base.Base):
 
             cycles = self.max_evolution_cycles
             duration = self.max_evolution_duration
-            n_jobs = (self.n_jobs
-                      if self.n_jobs > 0
-                      else multiprocessing.cpu_count())
 
             if cycles != np.inf and duration != np.inf:
                 # Both cycles count and evolution duration were defined, let's
                 # choose the population size that optimizes these constraints.
                 # Fist, estimates the time for evaluating a individual.
+                individual = self.agent.environment.state_class_.random()
                 utility_elapsed = time.time()
-                self.agent.utility(
-                    self.agent.environment.state_class_.random())
+                self.agent.utility(individual)
                 utility_elapsed = time.time() - utility_elapsed
+                del individual
 
                 # Only 90% is used, as there are other time consuming jobs
                 # during a cycle, such as breeding, mutation and selection.
                 # Finally, lower bound value by 100.
-                self.population_size_ = max(
-                    100,
-                    int(.9 * n_jobs * duration / utility_elapsed / cycles))
+                self.population_size_ = int(.9 * self.n_jobs_ * duration /
+                                            utility_elapsed / cycles)
+                self.population_size_ = max(100, self.population_size_)
         else:
             raise ValueError('Illegal value for population size {%i}.'
                              % self.population_size)
@@ -302,25 +439,42 @@ class GeneticAlgorithm(base.Base):
                 raise ValueError('Illegal value for tournament size {%i}.'
                                  % self.tournament_size_)
 
-        self.generations_average_utility_ = []
-        self.generations_highest_utility_ = []
-        self.generations_lowest_utility_ = []
-        self.generations_variability_ = []
-        self.variability_ = None
+        if self.debug:
+            self.average_utility_ = []
+            self.highest_utility_ = []
+            self.lowest_utility_ = []
+            self.generations_variability_ = []
+
+        self.workers = []
+        self.tasks = queue.Queue()
+
+        for i in range(self.n_jobs_):
+            self.workers.append(self._Worker(worker_id=i, manager=self))
+            self.workers[-1].start()
 
         return self
 
     def search_dispose(self):
         self.population_ = None
-        self.selected_ = self.offspring_ = None
+
+        for _ in range(self.n_jobs_):
+            # Signal workers to stop, but don't wait for
+            # it to actually happen. No point on doing that.
+            self.tasks.put_nowait(None)
+
+        self.workers = None
+        self.tasks = None
+
         return self
 
     def cycle_start(self):
-        utilities = [self.agent.utility(i) for i in self.population_]
-        self.generations_average_utility_.append(sum(utilities) /
-                                                 self.population_size_)
-        self.generations_highest_utility_.append(max(utilities))
-        self.generations_lowest_utility_.append(min(utilities))
+        if self.debug:
+            utilities = [self.agent.utility(i) for i in self.population_]
+            size = self.population_size_
+
+            self.average_utility_.append(sum(utilities) / size)
+            self.highest_utility_.append(max(utilities))
+            self.lowest_utility_.append(min(utilities))
 
         return self
 
@@ -331,7 +485,7 @@ class GeneticAlgorithm(base.Base):
     def generate_population(self):
         """Generate initial random population.
 
-        The generations' size are defined by the `self.population_size`
+        The generation's size is defined by the `self.population_size`
         parameter. If its value is 'auto', a value that best fits the
         constrains is chosen.
 
@@ -340,27 +494,22 @@ class GeneticAlgorithm(base.Base):
         This method assumes the agent is in an environment capable of
         generating random states.
 
-        Returns
-        -------
-        self
-
         """
-        self.population_ = [self.agent.environment.state_class_.random()
-                            for _ in range(self.population_size_)]
 
+        self.population_ = []
+
+        for _ in range(self.n_jobs_):
+            self.tasks.put_nowait('generate_population')
+        self.tasks.join()
+
+        # Find who is the fittest.
         self.solution_candidate_ = max(self.population_,
                                        key=lambda i: self.agent.utility(i))
 
         return self
 
     def evolve(self):
-        """Evolve a generation of individuals.
-
-        Returns
-        -------
-        self
-
-        """
+        """Evolve a generation of individuals."""
         return (self
                 .cycle_start()
                 .select_for_breeding()
@@ -388,20 +537,18 @@ class GeneticAlgorithm(base.Base):
         Select individuals for breeding by adding them to the `selected_`
         array. The order in which the individuals are in the array determines
         the breeding pairs (`2i-th` and `(2i+1)-th` are breeding partners, for
-        every :math:`i \in [0, n_selected_ / 2)`).
+        every:math:`i \in [0, n_selected_ / 2)`).
 
-        Returns
-        -------
-        self
-        
         """
+        random = self.random_state
+
         if self.breeding_selection == 'random':
-            self.selected_ = np.random.choice(self.population_,
-                                              size=self.n_selected_)
+            self.selected_ = random.choice(self.population_,
+                                           size=self.n_selected_)
 
         elif self.breeding_selection == 'tournament':
-            self.selected_ = [max(np.random.choice(self.population_,
-                                                   size=self.tournament_size_),
+            self.selected_ = [max(random.choice(self.population_,
+                                                size=self.tournament_size_),
                                   key=lambda i: -self.agent.utility(i))
                               for _ in range(self.n_selected_)]
 
@@ -416,8 +563,8 @@ class GeneticAlgorithm(base.Base):
                 p -= minimum
             p /= np.sum(p)
 
-            self.selected_ = np.random.choice(self.population_,
-                                              size=self.n_selected_, p=p)
+            self.selected_ = random.choice(self.population_,
+                                           size=self.n_selected_, p=p)
 
         elif self.breeding_selection == 'gattaca':
             self.population_.sort(key=lambda i: -self.agent.utility(i))
@@ -426,22 +573,20 @@ class GeneticAlgorithm(base.Base):
         return self
 
     def breed(self):
+        """Breed previously selected individuals."""
         self.offspring_ = []
-        selected = iter(self.selected_)
 
-        try:
-            while True:
-                a, b = next(selected), next(selected)
-                self.offspring_.append(
-                    a.cross(b).mutate(self.mutation_factor,
-                                      self.mutation_probability))
-
-        except StopIteration:
-            pass
+        for _ in range(self.n_jobs_):
+            self.tasks.put_nowait('breed')
+        self.tasks.join()
 
         return self
 
     def naturally_select(self):
+        if not self.offspring_:
+            raise RuntimeError('No offspring generated. Cannot naturally '
+                               'select from empty set.')
+
         self.offspring_.sort(key=lambda i: -self.agent.utility(i))
         self.population_.sort(key=lambda i: -self.agent.utility(i))
 
@@ -451,7 +596,7 @@ class GeneticAlgorithm(base.Base):
 
         if self.natural_selection == 'random':
             self.population_ += self.offspring_
-            np.random.shuffle(self.population_)
+            self.random_state.shuffle(self.population_)
             self.population_ = self.population_[:self.population_size_]
 
         elif self.natural_selection == 'steady-state':
@@ -465,9 +610,9 @@ class GeneticAlgorithm(base.Base):
 
     def genetic_similarity(self):
         if not self.population_:
-            raise ValueError('Cannot compute genetic similarity of empty '
-                             'population. Are you calling genetic_similarity'
-                             'method before searching?')
+            raise RuntimeError('Cannot compute genetic similarity of empty '
+                               'population. Are you calling genetic_similarity '
+                               'method before searching?')
 
         individuals = np.array([i.data for i in self.population_])
 
@@ -477,11 +622,12 @@ class GeneticAlgorithm(base.Base):
         # Average distance from the centroid, relative to the maximum variance
         # (all genes being different).
         # This assumes that genes assume integer values in {0, 1} set,
-        # and it should be improved. :-(
+        # and it should be improved.:-(
         self.variability_ = np.mean(
             distance.cdist(individuals, np.array([centroid])) /
             np.sqrt(individuals.shape[1]))
 
-        self.generations_variability_.append(self.variability_)
+        if self.debug:
+            self.generations_variability_.append(self.variability_)
 
         return self.variability_

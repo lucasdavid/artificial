@@ -126,7 +126,7 @@ class BreadthFirstSearchTest(TestCase):
         s = fringe_searches.BreadthFirst(agent=a, root=_S(10))
 
         with self.assertRaises(RuntimeError):
-            _ = s.backtrack().solution_path_
+            s.backtrack()
 
 
 class DepthFirstSearchTest(TestCase):

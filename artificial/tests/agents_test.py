@@ -1,8 +1,6 @@
-import random
-import warnings
-
 from unittest import TestCase
 
+import warnings
 from artificial import base, agents
 from artificial.base import State
 from artificial.searches import fringe
@@ -24,7 +22,7 @@ class _TEnv(base.Environment):
 
 class TableDrivenAgentTest(TestCase):
     def setUp(self):
-        self.env = _TEnv(_S(0), random_generator=random.Random(0))
+        self.env = _TEnv(_S(0))
 
     def test_sanity(self):
         action_map = {
@@ -209,7 +207,7 @@ class _TestGoalBasedAgent(agents.GoalBasedAgent):
 
 class GoalBasedAgentTest(TestCase):
     def setUp(self):
-        self.env = _TEnv(_S(0), random_generator=random.Random(0))
+        self.env = _TEnv(_S(0))
 
     def test_sanity(self):
         gba = _TestGoalBasedAgent(fringe.BreadthFirst,

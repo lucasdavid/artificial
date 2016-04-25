@@ -1,6 +1,10 @@
-import abc
-import random
+"""Artificial Environments"""
 
+# Author: Lucas David -- <ld492@drexel.edu>
+# License: MIT (c) 2016
+
+import abc
+import numpy as np
 
 
 class Environment(metaclass=abc.ABCMeta):
@@ -13,15 +17,12 @@ class Environment(metaclass=abc.ABCMeta):
 
     Parameters
     ----------
-    initial_state : State-like object
+    initial_state: State-like object, default=None
         Initial state of the environment.
-
-    random_generator : Random object (default=None)
-        Random instance used in debugging, yielding deterministic results.
 
     Attributes
     ----------
-    state_class_ : State subclass
+    state_class_: State subclass
         State sub-class link to the current domain's State specification,
         for reference purposes. Usually required for searches that generate
         random states.
@@ -30,10 +31,12 @@ class Environment(metaclass=abc.ABCMeta):
 
     state_class_ = None
 
-    def __init__(self, initial_state, random_generator=None):
+    def __init__(self, initial_state=None):
         self.current_state = self.initial_state = initial_state
-        self.random_generator = random_generator or random.Random()
         self.agents = []
+
+    def build(self):
+        pass
 
     def update(self):
         raise NotImplementedError

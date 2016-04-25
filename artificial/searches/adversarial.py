@@ -1,3 +1,8 @@
+"""Artificial Adversarial Searches"""
+
+# Author: Lucas David -- <ld492@drexel.edu>
+# License: MIT (c) 2016
+
 import abc
 import random
 import time
@@ -12,7 +17,6 @@ class Adversarial(base.Base, metaclass=abc.ABCMeta):
 
     Parameters
     ----------
-
     time_limit : float (default=np.inf)
         Time limit (in seconds) for a performance.
         By default, search has infinite time to make a decision.
@@ -26,12 +30,10 @@ class Adversarial(base.Base, metaclass=abc.ABCMeta):
 
     Attributes
     ----------
-
     started_at : long
         Time in which performance started.
         `time.time() - started_at` yeilds how much time has
         approximately passed since the `MinMax.perform` was called.
-
     """
 
     MAXIMIZE, MINIMIZE = (0, 1)
@@ -52,7 +54,6 @@ class Random(Adversarial):
     """Random Adversarial Search.
 
     Actions are taken randomly, achieving a result.
-
     """
 
     def __init__(self, agent, root=None,
@@ -76,15 +77,12 @@ class Random(Adversarial):
 class MinMax(Adversarial):
     """Min Max Adversarial Search.
 
-
     Notes
     -----
-
     Not all branches can be completely searched in feasible time.
     `MinMax` assumes that the agent at hand has a "good" utility
     function to evaluate states, regardless of their position in
     the derivation tree.
-
     """
 
     def search(self):
@@ -121,7 +119,6 @@ class AlphaBeta(Adversarial):
 
     Min-Max search with alpha-beta pruning, a optimization strategy for
     branch cutting.
-
     """
 
     def search(self):

@@ -3,18 +3,25 @@
 # Author: Lucas David -- <ld492@drexel.edu>
 # License: MIT (c) 2016
 
-import random
 import time
 
-import numpy as np
+import artificial as at
 import matplotlib.pyplot as plt
+import numpy as np
+from artificial import searches
 
-from artificial import agents
-from artificial.base import Environment, GeneticState
-from artificial.searches.genetic import GeneticAlgorithm
+random_state = np.random.RandomState(0)
+
+search_params = dict(
+    breeding_selection='random',
+    # natural_selection='steady-state',
+    mutation_probability=.1,
+    max_evolution_duration=10,
+    min_genetic_similarity=.001,
+    debug=True)
 
 
-class Bag(GeneticState):
+class Bag(at.base.GeneticState):
     def h(self):
         bag_weight = sum(World.items_info_expanded[i][1]
                          for i, is_in_the_bag in enumerate(self.data)
@@ -28,26 +35,27 @@ class Bag(GeneticState):
                     if is_in_the_bag) / bag_weight
 
     def cross(self, other):
-        cross_point = random.randint(0, len(World.items_info_expanded))
+        cross_point = random_state.randint(0, len(World.items_info_expanded))
         return Bag(self.data[:cross_point] + other.data[cross_point:])
 
     def mutate(self, factor, probability):
-        m = np.random.rand(len(self.data)) < factor * probability
+        m = random_state.rand(len(self.data)) <= probability
 
-        if np.any(m):
-            data = np.array(list(self.data))
-            data[m] = 1 - data[m]
+        data = np.array(list(self.data))
+        data[m] = 1 - data[m]
+
+        self.data = data.tolist()
 
         return self
 
     @classmethod
     def random(cls):
         return Bag(np
-                   .round(np.random.rand(len(World.items_info_expanded)))
+                   .round(random_state.rand(len(World.items_info_expanded)))
                    .astype(int).tolist())
 
 
-class World(Environment):
+class World(at.base.Environment):
     state_class_ = Bag
 
     bag_max_weight = 400
@@ -98,7 +106,7 @@ class World(Environment):
             print('Variability: %f' % agent.search.variability_)
 
 
-class Hiker(agents.UtilityBasedAgent):
+class Hiker(at.agents.UtilityBasedAgent):
     def act(self):
         return (self.search
                 .search()
@@ -114,14 +122,8 @@ def main():
     print('================\n')
 
     env = World(initial_state=Bag.random())
-    agent = Hiker(environment=env, search=GeneticAlgorithm,
-                  search_params=dict(
-                      breeding_selection='random',
-                      # natural_selection='steady-state',
-                      mutation_factor=.2,
-                      mutation_probability=1,
-                      max_evolution_duration=10,
-                      min_genetic_similarity=.001))
+    agent = Hiker(environment=env, search=searches.genetic.GeneticAlgorithm,
+                  search_params=search_params)
     env.agents = [agent]
 
     start = time.time()
@@ -134,15 +136,15 @@ def main():
         search = env.agents[0].search
 
         plt.subplot(1, 2, 1)
-        plt.plot(search.generations_highest_utility_, linewidth=2, color='r')
-        plt.plot(search.generations_average_utility_, linewidth=4,
+        plt.plot(search.highest_utility_, linewidth=2, color='r')
+        plt.plot(search.average_utility_, linewidth=4,
                  color='orange')
-        plt.plot(search.generations_lowest_utility_, linewidth=2, color='y')
+        plt.plot(search.lowest_utility_, linewidth=2, color='y')
         plt.ylabel('Generations utility')
         plt.title('Utility')
 
         plt.subplot(1, 2, 2)
-        plt.plot(search.generations_variability_, linewidth=4, color='orange')
+        plt.plot(search.variability_, linewidth=4, color='orange')
         plt.ylabel('Generations\' variability')
         plt.title('Variability')
 

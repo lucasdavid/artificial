@@ -9,4 +9,5 @@ artificial.egg-info/
 build/
 dist/
 *~
+env/
 

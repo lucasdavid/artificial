@@ -1,3 +1,8 @@
+"""Artificial Agents"""
+
+# Author: Lucas David -- <ld492@drexel.edu>
+# License: MIT (c) 2016
+
 import abc
 import warnings
 

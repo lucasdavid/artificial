@@ -1,28 +1,9 @@
 from unittest import TestCase
+from unittest.mock import MagicMock
 
-from artificial.base.helpers import Graph, PriorityQueue
-
-
-class GraphTest(TestCase):
-    def test_sanity(self):
-        g = Graph(
-            nodes=['Bagda', 'Sabaa Al Bour', 'Sabiat'],
-            edges={
-                0: {1: 10, 2: 50},
-                1: {0: 10, 2: 40},
-                2: {0: 50, 1: 40}
-            }
-        )
-
-        self.assertIsNotNone(g)
-        self.assertFalse(g.directed)
-        self.assertEqual(g.n_nodes, 3)
-
-        self.assertEqual(g.edges[0][1], 10)
-        self.assertEqual(g.edges[1][2], 40)
-        self.assertEqual(g.edges[2][0], 50)
-
-        self.assertListEqual(g.nodes, ['Bagda', 'Sabaa Al Bour', 'Sabiat'])
+import artificial as at
+from artificial.utils import PriorityQueue
+from artificial.utils.helpers import live
 
 
 class PriorityQueueTest(TestCase):
@@ -108,3 +89,35 @@ class PriorityQueueTest(TestCase):
 
         q.add('one')
         self.assertTrue(q)
+
+
+class _E(at.base.Environment):
+    def update(self):
+        """Updates nothing"""
+
+
+class LiveTest(TestCase):
+    def setUp(self):
+        self.env = _E(at.base.State(140202))
+        self.env.build = MagicMock(side_effect=lambda: self.env)
+        self.env.update = MagicMock(side_effect=lambda: self.env)
+
+    def test_live(self):
+        expected_cycles = 5
+        live(self.env, n_cycles=expected_cycles)
+        self.env.build.assert_any_call()
+        self.env.update.assert_any_call()
+
+        live(self.env, n_cycles=expected_cycles, verbose=True)
+        self.env.build.assert_any_call()
+        self.env.update.assert_any_call()
+
+        self.env.update = MagicMock(side_effect=KeyboardInterrupt)
+
+        live(self.env, n_cycles=expected_cycles)
+        self.env.build.assert_any_call()
+        self.env.update.assert_any_call()
+
+        live(self.env, n_cycles=expected_cycles, verbose=True)
+        self.env.build.assert_any_call()
+        self.env.update.assert_any_call()
