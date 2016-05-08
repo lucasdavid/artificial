@@ -3,7 +3,7 @@
 [![Build Status](https://travis-ci.org/lucasdavid/artificial.svg?branch=master)](https://travis-ci.org/lucasdavid/artificial)
 [![Coverage Status](https://coveralls.io/repos/github/lucasdavid/artificial/badge.svg?branch=master)](https://coveralls.io/github/lucasdavid/artificial?branch=master)
 
-A basic API for artificially intelligent agents.
+A basic API for intelligent agents.
 
 ## Introduction
 
@@ -16,6 +16,33 @@ describe a problem (and its solution):
 * **State** A model that holds data for both world and agents. It can be used
             to represent a state of the World or to predict states by agents.
 * **Agent** Abstraction that presents an intelligent behavior.
+
+## Installing
+
+`artificial` is written on Python 3.4, and requires numpy, scipy and
+matplotlib. You can install everything with:
+
+```shell
+git clone https://github.com/lucasdavid/artificial
+cd artificial
+
+# or python, depends on the system!
+python3 setup.py install
+```
+
+To run tests, additional packages are required:
+```shell
+cd artificial
+
+# or pip, depends on the system!
+pip3 install -r requirements-dev.txt
+
+# Run tests!
+nosetests
+
+```
+
+The coverage info will be placed inside `coverage` folder.
 
 ## Examples
 ### Genetic Algorithm: Speller Agent

@@ -6,4 +6,8 @@
 
 def scale(X):
     """Center and scale data set's features."""
-    return (X - X.mean(axis=0)) / X.std(axis=0)
+    mean = X.mean(axis=0)
+    std = X.std(axis=0)
+    std[std == 0] = 1
+
+    return (X - mean) / std

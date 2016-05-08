@@ -5,7 +5,7 @@ except ImportError:
 
 setup(
     name='artificial',
-    description='Implementation for Artificial Intelligence: '
+    description='Implementations of Artificial Intelligence: '
                 'An Modern Approach book examples.',
     long_description=open('README.md').read(),
     version='0.1',
@@ -16,6 +16,6 @@ setup(
 
     url='https://github.com/lucasdavid/artificial',
     download_url='https://github.com/lucasdavid/artificial/archive/master.zip',
-    install_requires=['numpy', 'scipy'],
+    install_requires=['six', 'numpy', 'scipy', 'matplotlib', 'scikit-learn'],
     tests_require=open('requirements-dev.txt').readlines(),
 )

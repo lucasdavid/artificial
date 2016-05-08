@@ -1,4 +1,21 @@
-"""Neural Networks Training with Genetic Algorithms."""
+"""
+================================================
+Neural Networks Training with Genetic Algorithms
+================================================
+
+This example consists on:
+
+* Loading every data set in `benchmarks` and plot its first dimensions.
+* Train a NN with gradient descent and compute it's score.
+* Color the decision regions and boundaries of the NN.
+* Train a NN with every search parameters in the current execution and store
+  info about the best of them.
+* Plot fitness over time graphs.
+* Color the decision regions and boundaries of the best estimator.
+
+As you can see, there's a lot to do. Hold tight: this is going to take a while.
+
+"""
 
 # Author: Lucas David -- <ld492@drexel.edu>
 # License: MIT (c) 2016
@@ -9,85 +26,19 @@ import artificial as at
 import matplotlib.pyplot as plt
 import numpy as np
 from artificial import searches
-from artificial.utils import (preprocessing, helpers, model_selection,
-                              datasets)
+from artificial.utils import helpers
+from sklearn import decomposition, datasets, model_selection
+from sklearn.neural_network import MLPClassifier
 
 random_state = np.random.RandomState(0)
 
-
-def plot_decision_boundary(X, y, l):
-    """Plot the decision boundaries of a classifier."""
-    x_min, x_max = X[:, 0].min() - .5, X[:, 0].max() + .5
-    y_min, y_max = X[:, 1].min() - .5, X[:, 1].max() + .5
-    h = 0.01
-    xx, yy = np.meshgrid(np.arange(x_min, x_max, h), np.arange(y_min, y_max, h))
-    Z = l(np.c_[xx.ravel(), yy.ravel()])
-    Z = Z.reshape(xx.shape)
-    plt.contourf(xx, yy, Z, cmap=plt.cm.Spectral)
-    plt.scatter(X[:, 0], X[:, 1], c=y, cmap=plt.cm.Spectral)
+plotting_count = 1
 
 
-execute_following_training = [
-    # Training Iris data set.
-    dict(
-        dataset=lambda: datasets.iris(n_features=2),
-        nn_params=dict(
-            architecture=(2, 40, 3),
-            n_epochs=200,
-            learning_rate=.1,
-            regularization=.001,
-            random_state=random_state,
-        ),
-        search_params=dict(
-            max_evolution_duration=10 * 60,
-            # max_evolution_cycles=np.inf,
-            # min_genetic_similarity=0,
-            population_size=1000,
-            mutation_factor=.2,
-            mutation_probability=.1,
-            # n_selected=1.0,
-            # breeding_selection='roulette',
-            # tournament_size=.5,
-            # natural_selection='steady-state',
-            # n_jobs=1,
-            # debug=True,
-            random_state=random_state,
-        ),
-        settings=dict(
-            plotting=True
-        ),
-    ),
+def plot_decision_boundary(X, y, model, file_name=''):
+    """Plot the decision boundaries of a classifier.
 
-    # Training Spiral data set.
-    dict(
-        dataset=lambda: datasets.make_spiral(
-            n_samples=300, n_components=2, n_classes=3,
-            random_state=random_state),
-        nn_params=dict(
-            architecture=(2, 40, 3),
-            n_epochs=200,
-            learning_rate=.1,
-            regularization=.001,
-            random_state=random_state,
-        ),
-        search_params=dict(
-            max_evolution_duration=10 * 60,
-            mutation_factor=1,
-            mutation_probability=.1,
-            debug=True,
-            random_state=random_state,
-        ),
-        settings=dict(
-            plotting=True
-        ),
-    )
-]
-
-
-class NN:
-    """Fully Connected, 3-Layered Artificial Neural Network.
-
-    This class is an adaption from Britz original implementation in [1].
+    This function was originally implemented by Britz [1].
 
     References
     ----------
@@ -96,133 +47,58 @@ class NN:
     http://www.wildml.com/2015/09/implementing-a-neural-network-from-scratch/
 
     """
+    global plotting_count
 
-    def __init__(self, architecture, learning_rate=1e0,
-                 regularization=1e-4, n_epochs=1000, copy=True, verbose=False,
-                 random_state=None):
-        self.architecture = architecture
-        self.learning_rate = learning_rate
-        self.regularization = regularization
-        self.n_epochs = n_epochs
-        self.copy = copy
-        self.verbose = verbose
-        self.random_state = random_state or np.random.RandomState()
+    x_min, x_max = X[:, 0].min() - .5, X[:, 0].max() + .5
+    y_min, y_max = X[:, 1].min() - .5, X[:, 1].max() + .5
+    h = 0.01
+    xx, yy = np.meshgrid(np.arange(x_min, x_max, h), np.arange(y_min, y_max, h))
+    data = np.c_[xx.ravel(), yy.ravel()]
+    Z = model.predict(data)
+    Z = Z.reshape(xx.shape)
+    plt.contourf(xx, yy, Z, cmap=plt.cm.Spectral)
+    plt.scatter(X[:, 0], X[:, 1], c=y, cmap=plt.cm.Spectral)
 
-        self.W_ = self.b_ = None
-        self._X = self._y = None
+    plt.savefig('report/%s%i.png' % (file_name, plotting_count))
+    plt.close()
 
-    def random_build(self):
-        """Build NN architecture randomly"""
-        arc = self.architecture
+    plotting_count += 1
 
-        self.W_, self.b_ = [], []
 
-        for i in range(1, len(arc)):
-            # Build random matrices based on the number of units in the
-            # previous and current layers.
-            self.W_.append(self.random_state.randn(arc[i - 1], arc[i]) /
-                           np.sqrt(arc[i - 1]))
-            self.b_.append(np.zeros((1, arc[i])))
-
-        return self
-
-    def custom_build(self, W, b):
-        """Set a custom architecture for the NN"""
-        self.W_ = W
-        self.b_ = b
-
-        return self
-
-    def fit(self, X, y):
-        X = X.copy() if self.copy else X
-
-        self._X, self._y = X, y
-
-        if self.W_ is None:
-            # If architecture graph's weights aren't defined, set it randomly.
-            self.random_build()
-
-        for i in range(0, self.n_epochs):
-            W1, W2 = self.W_
-            b1, b2 = self.b_
-
-            # Forward propagation.
-            z1 = X.dot(W1) + b1
-            a1 = np.tanh(z1)
-            z2 = a1.dot(W2) + b2
-            exp_scores = np.exp(z2)
-            probabilities = (exp_scores /
-                             np.sum(exp_scores, axis=1, keepdims=True))
-
-            # Back-propagation.
-            delta3 = probabilities
-            delta3[range(X.shape[0]), y] -= 1
-            dW2 = a1.T.dot(delta3)
-            db2 = np.sum(delta3, axis=0, keepdims=True)
-            delta2 = delta3.dot(W2.T) * (1 - np.power(a1, 2))
-            dW1 = np.dot(X.T, delta2)
-            db1 = np.sum(delta2, axis=0)
-
-            # Add regularization terms.
-            dW2 += self.regularization * W2
-            dW1 += self.regularization * W1
-
-            # Gradient descent parameter update.
-            W1 += -self.learning_rate * dW1
-            b1 += -self.learning_rate * db1
-            W2 += -self.learning_rate * dW2
-            b2 += -self.learning_rate * db2
-
-            if self.verbose and i % 1000 == 0:
-                print("Loss after iteration %i: %f" % (i, self.loss(X, y)))
-
-        return self
-
-    def loss(self, X, y):
-        W1, W2 = self.W_
-        b1, b2 = self.b_
-
-        z1 = X.dot(W1) + b1
-        a1 = np.tanh(z1)
-        z2 = a1.dot(W2) + b2
-        exp_scores = np.exp(z2)
-        probabilities = exp_scores / np.sum(exp_scores, axis=1, keepdims=True)
-
-        # Calculating the loss
-        correct_log_probs = -np.log(probabilities[range(X.shape[0]), y])
-        data_loss = np.sum(correct_log_probs)
-
-        # Add regularization term to loss (optional)
-        data_loss += (self.regularization / 2 *
-                      (np.sum(np.square(W1)) + np.sum(np.square(W2))))
-
-        return 1. / X.shape[0] * data_loss
-
-    def feedforward(self, X):
-        W1, W2 = self.W_
-        b1, b2 = self.b_
-
-        z1 = X.dot(W1) + b1
-        a1 = np.tanh(z1)
-        z2 = a1.dot(W2) + b2
-        exp_scores = np.exp(z2)
-        return exp_scores / np.sum(exp_scores, axis=1, keepdims=True)
-
-    def predict(self, X):
-        return np.argmax(self.feedforward(X), axis=1)
-
-    def score(self, X, y):
-        return (self.predict(X).flatten() == y).sum() / X.shape[0]
+benchmarks = [
+    # Training on Digits.
+    dict(
+        name='digits',
+        dataset=lambda: datasets.load_digits(),
+        nn_params=dict(
+            hidden_layer_sizes=(100,), random_state=np.random.RandomState(76),
+            max_iter=1,
+        ),
+        searches=[
+            dict(
+                population_size=1000, debug=True,
+                max_evolution_cycles=10000, max_evolution_duration=10 * 60,
+                mutation_factor=.1, mutation_probability=.1,
+                random_state=np.random.RandomState(82)
+            )
+        ],
+        settings=dict(
+            pc_decomposing=True,
+            whiten=False,
+            plotting=False,
+        )
+    ),
+]
 
 
 class TrainingCandidate(at.base.GeneticState):
     @property
-    def W_(self):
-        return self.data.W_
+    def coefs_(self):
+        return self.data.coefs_
 
     @property
-    def b_(self):
-        return self.data.b_
+    def intercepts_(self):
+        return self.data.intercepts_
 
     def h(self):
         """The Heuristic Associated to the Training Candidate.
@@ -238,8 +114,7 @@ class TrainingCandidate(at.base.GeneticState):
         higher heuristic cost.
 
         """
-        gnn = self.data
-        return np.sum((gnn.predict(World.X) - World.y) ** 2)
+        return self.data.loss_
 
     def cross(self, other):
         """Crossover Operator.
@@ -256,24 +131,26 @@ class TrainingCandidate(at.base.GeneticState):
         W_c_ = []
         b_c_ = []
 
-        for layer, (W_a, b_a, W_b, b_b) in enumerate(zip(self.W_, self.b_,
-                                                         other.W_, other.b_)):
+        for layer, (W_a, b_a, W_b, b_b) in enumerate(
+                zip(self.coefs_, self.intercepts_,
+                    other.coefs_,
+                    other.intercepts_)):
             shape = W_a.shape
             n_elements = shape[0] * shape[1]
 
-            cut = int(random_state.rand() * n_elements)
+            cut = int(self.data.random_state.rand() * n_elements)
 
-            W_c = np.hstack((W_a.flatten()[:cut], W_b.flatten()[cut:]))
+            W_c = np.hstack((W_a.ravel()[:cut], W_b.ravel()[cut:]))
             W_c.resize(shape)
             W_c_.append(W_c)
 
-            cut = int(random_state.rand() * b_a.shape[1])
+            cut = int(self.data.random_state.rand() * b_a.shape[1])
 
             b_c = np.hstack((b_a[:, :cut], b_b[:, cut:]))
             b_c_.append(b_c)
 
-        nn_params = World.current_execution_params['nn_params']
-        return TrainingCandidate(NN(**nn_params).custom_build(W_c_, b_c_))
+        return TrainingCandidate(NN(**World.params['nn_params'])
+                                 .custom_build(W_c_, b_c_))
 
     def mutate(self, factor, probability):
         """Mutation Operator.
@@ -292,26 +169,26 @@ class TrainingCandidate(at.base.GeneticState):
         because each evolution cycle reaps the most weak individuals.
 
         """
-        for layer, (W, b) in enumerate(zip(self.W_, self.b_)):
-            mutates = random_state.rand(*W.shape) < probability
-            W[mutates] += (2 * random_state.rand() - 1) * factor
+        for layer, (W, b) in enumerate(zip(self.coefs_, self.intercepts_)):
+            mutates = self.data.random_state.rand(*W.shape) < probability
+            W[mutates] += (2 * self.data.random_state.rand() - 1) * factor
 
-            mutates = random_state.rand(*b.shape) < probability
-            b[mutates] += (2 * random_state.rand() - 1) * factor
+            mutates = self.data.random_state.rand(*b.shape) < probability
+            b[mutates] += (2 * self.data.random_state.rand() - 1) * factor
 
         return self
 
     @classmethod
     def random(cls):
         """Randomly Build Individual."""
-        nn_params = World.current_execution_params['nn_params']
-        return TrainingCandidate(NN(**nn_params).random_build())
+        return TrainingCandidate(MLPClassifier(**World.params['nn_params'])
+                                 .fit(World.X, World.y))
 
 
 class World(at.base.Environment):
     state_class_ = TrainingCandidate
-    executions = execute_following_training.copy()
-    current_execution_params = None
+    executions = benchmarks.copy()
+    params = None
 
     def update(self):
         if not World.executions:
@@ -319,14 +196,26 @@ class World(at.base.Environment):
 
         # Define workspace (data set of interest).
         params = World.executions.pop(0)
-        World.current_execution_params = params
+        World.params = params
 
-        X, y = params['dataset']()
-        X = preprocessing.scale(X)
+        t_time = time()
+
+        print('Data set %s %f' % (params['name'], t_time))
+
+        ds = params['dataset']()
+
+        X, y = ds.data, ds.target
+
+        if params['settings'].get('pc_decomposing', False):
+            X = decomposition.PCA(
+                whiten=params['settings'].get('whiten', False),
+                random_state=0).fit_transform(X)
 
         if params['settings']['plotting']:
             plt.scatter(X[:, 0], X[:, 1], c=y, cmap=plt.cm.Spectral)
-            plt.show()
+            plt.tight_layout()
+            plt.savefig('report/ds-%s.png' % params['name'])
+            plt.close()
 
         # Separate train (80%) and test data (20%).
         X, X_test, y, y_test = model_selection.train_test_split(
@@ -335,62 +224,81 @@ class World(at.base.Environment):
         # Set class attributes. We need this for the genetic algorithm.
         World.X, World.X_test, World.y, World.y_test = X, X_test, y, y_test
 
-        trainer = NNTrainer(searches.genetic.GeneticAlgorithm, self,
-                            search_params=params['search_params'])
-
         # Build a regularly trained Neural Network once.
         # We'll use it as base for our benchmarks.
-        cnn = NN(**params['nn_params'])
-        self.backpropagation_training(cnn)
+        mpl = MLPClassifier(**params['nn_params'])
 
-        # Ask agent to find a trained net for us.
-        print('Genetic training has started...')
-
-        t = time()
-        training = trainer.act()
-        print('Genetic initiation complete (%i cycles, %f s)'
-              % (trainer.search.cycle_, time() - t))
-
-        if params['settings']['plotting']:
-            # Plotting generations' utilities.
-            plt.plot(trainer.search.lowest_utility_,
-                     color='blue', linewidth=4, label='Lowest')
-            plt.plot(trainer.search.average_utility_,
-                     color='orange', linewidth=4, label='Average')
-            plt.plot(trainer.search.highest_utility_,
-                     color='red', linewidth=4, label='Highest')
-            plt.legend()
-
-            plt.xlabel('generation')
-            plt.ylabel('utility')
-
-            plt.tight_layout()
-            plt.show()
-
-        # Let's cross our fingers!
-        # Build a genetically initialized trained Neural Network.
-        gnn = (NN(**params['nn_params'])
-               .custom_build(training.W_, training.b_))
-        self.evaluate(gnn)
-
-    @staticmethod
-    def backpropagation_training(nn):
         print('Regular training ongoing...')
-
         t = time()
-        nn.fit(World.X, World.y)
-        print('Training complete (%f s)' % (time() - t))
+        mpl.fit(X, y)
+        print('Training complete (elapsed: %f s)' % (time() - t))
+        self.evaluate(mpl, label='NN')
 
-        World.evaluate(nn)
+        best_i, best_model, best_score = -1, None, -np.inf
+
+        for i, search_params in enumerate(params['searches']):
+            trainer = NNTrainer(searches.genetic.GeneticAlgorithm, self,
+                                search_params=search_params)
+
+            # Ask agent to find a trained net for us.
+            print('Genetic training has started. Parameters: \n%s'
+                  % search_params)
+            t = time()
+            training = trainer.act()
+            print('Evolution complete (%i cycles, %f s elapsed, '
+                  'candidate utility: %f)'
+                  % (trainer.search.cycle_, time() - t,
+                     trainer.utility(training)))
+
+            if (params['settings']['plotting'] and
+                    search_params.get('debug', False)):
+                # Plotting generations' utilities.
+                plt.plot(trainer.search.lowest_utility_,
+                         color='blue', linewidth=4, label='Lowest')
+                plt.plot(trainer.search.average_utility_,
+                         color='orange', linewidth=4, label='Average')
+                plt.plot(trainer.search.highest_utility_,
+                         color='red', linewidth=4, label='Highest')
+                plt.legend()
+
+                plt.xlabel('generation')
+                plt.ylabel('utility')
+
+                plt.tight_layout()
+                plt.savefig('report/ut-%s-%i.png' % (params['name'], i))
+                plt.close()
+
+            # Let's cross our fingers! Build a Neural Network with the
+            # parameters selected by the evolutionary process.
+            gmpl = MLPClassifier(**params['nn_params'])
+            gmpl.coefs_ = training.coefs_
+            gmpl.intercepts_ = training.intercepts_
+
+            score = self.evaluate(gmpl, label='GA')
+            if score > best_score:
+                best_i, best_model, best_score = i, gmpl, score
+
+            gmpl.fit(X, y)
+            self.evaluate(gmpl, label='trained-gnn')
+
+        print('%s\'s report:\n'
+              '\tBest estimator id: %i\n'
+              'Score: %.2f\n'
+              'Total time elapsed: %f s\n'
+              '---\n'
+              % (params['name'], best_i, best_score, (time() - t_time)))
 
     @staticmethod
-    def evaluate(nn):
-        if World.current_execution_params['settings']['plotting']:
-            plot_decision_boundary(World.X, World.y, lambda x: nn.predict(x))
-            plt.tight_layout()
-            plt.show()
+    def evaluate(nn, label='estimator'):
+        if World.params['settings']['plotting'] and World.X.shape[1] == 2:
+            file_name = '%s-%s-' % (World.params['name'], label)
 
-        print('Accuracy score: %.2f' % nn.score(World.X_test, World.y_test))
+            plot_decision_boundary(World.X, World.y, nn, file_name=file_name)
+
+        score = nn.score(World.X_test, World.y_test)
+        print('%s accuracy score: %.2f\n' % (label, score))
+
+        return score
 
 
 class NNTrainer(at.agents.UtilityBasedAgent):
@@ -411,14 +319,12 @@ class NNTrainer(at.agents.UtilityBasedAgent):
 
 
 def main():
-    print('=========================================')
-    print('Neural Networks TrainingCandidate Example')
-    print('=========================================\n')
+    print(__doc__)
 
     # Build and update world relative to the data defined by the user. At each
     # iteration, the world will train and compare neural nets to a specific
     # data set.
-    helpers.live(World(), n_cycles=len(execute_following_training))
+    helpers.live(World(), n_cycles=len(benchmarks))
 
 
 if __name__ == '__main__':

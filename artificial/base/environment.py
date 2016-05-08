@@ -4,10 +4,12 @@
 # License: MIT (c) 2016
 
 import abc
-import numpy as np
+
+import six
 
 
-class Environment(metaclass=abc.ABCMeta):
+@six.add_metaclass(abc.ABCMeta)
+class Environment:
     """Environment Base Class.
 
     Defines how agents and states intertwine, modeling a problem domain
@@ -22,10 +24,12 @@ class Environment(metaclass=abc.ABCMeta):
 
     Attributes
     ----------
-    state_class_: State subclass
-        State sub-class link to the current domain's State specification,
-        for reference purposes. Usually required for searches that generate
-        random states.
+    current_state : State-like object
+        Link to the current domain's State specification, for reference
+        purposes.
+
+    agents : list of Agent-like objects
+        Contains a list of all agents currently inserted into the domain.
 
     """
 
@@ -36,10 +40,14 @@ class Environment(metaclass=abc.ABCMeta):
         self.agents = []
 
     def build(self):
-        pass
+        """Build the environment, if necessary"""
 
+    @abc.abstractmethod
     def update(self):
-        raise NotImplementedError
+        """Update the environment, should be overridden to reflect the changes
+        in the real world.
+
+        """
 
     def finished(self):
         return self.current_state and self.current_state.is_goal

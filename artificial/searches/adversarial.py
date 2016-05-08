@@ -8,11 +8,13 @@ import random
 import time
 
 import numpy as np
+import six
 
 from . import base
 
 
-class Adversarial(base.Base, metaclass=abc.ABCMeta):
+@six.add_metaclass(abc.ABCMeta)
+class Adversarial(base.Base):
     """Adversarial Search.
 
     Parameters
@@ -38,10 +40,9 @@ class Adversarial(base.Base, metaclass=abc.ABCMeta):
 
     MAXIMIZE, MINIMIZE = (0, 1)
 
-    def __init__(self, agent, root=None,
-                 time_limit=np.inf, depth_limit=np.inf,
-                 dispose=False):
-        super().__init__(agent=agent, root=root)
+    def __init__(self, agent, root=None, time_limit=np.inf,
+                 depth_limit=np.inf, dispose=False):
+        super(Adversarial, self).__init__(agent=agent, root=root)
 
         self.time_limit = time_limit
         self.depth_limit = depth_limit
@@ -59,14 +60,14 @@ class Random(Adversarial):
     def __init__(self, agent, root=None,
                  time_limit=np.inf, depth_limit=np.inf,
                  dispose=False, random_generator=None):
-        super().__init__(agent=agent, root=root,
-                         time_limit=time_limit, depth_limit=depth_limit,
-                         dispose=dispose)
+        super(Random, self).__init__(
+            agent=agent, root=root, time_limit=time_limit,
+            depth_limit=depth_limit, dispose=dispose)
         self.random_generator = random_generator or random.Random()
 
     def search(self):
         self.started_at = time.time()
-        state = self.root or self.agent.last_known_state.random()
+        state = self.root or self.agent.last_state.random()
 
         children = self.agent.predict(state)
         self.solution_candidate_ = (self.random_generator.choice(children)
@@ -91,7 +92,7 @@ class MinMax(Adversarial):
         best_score = -np.inf
 
         for c in self.agent.predict(self.root):
-            c_score = self._min_max_policy(c)
+            c_score = self._selection_policy(c)
 
             if best_score < c_score:
                 self.solution_candidate_ = c
@@ -99,70 +100,46 @@ class MinMax(Adversarial):
 
         return self
 
-    def _min_max_policy(self, state, depth=1):
-        if (depth > self.depth_limit or
-            time.time() - self.started_at > self.time_limit):
-            # Constraints violated.
-            return self.agent.utility(state)
+    def should_maximize_at(self, depth):
+        return depth % 2 == self.MAXIMIZE
 
+    def _selection_policy(self, state, depth=1):
+        """Min-Max Policy."""
         children = self.agent.predict(state)
-        if not children:
-            # Terminal state.
+        if (depth > self.depth_limit or not children or
+                        time.time() - self.started_at > self.time_limit):
             return self.agent.utility(state)
 
-        interest = max if depth % 2 == self.MAXIMIZE else min
-        return interest((self._min_max_policy(c, depth + 1) for c in children))
+        interest = max if self.should_maximize_at(depth) else min
+        return interest(self._selection_policy(c, depth + 1)
+                        for c in children)
 
 
-class AlphaBeta(Adversarial):
+class AlphaBeta(MinMax):
     """Alpha Beta Pruning Adversarial Search.
 
     Min-Max search with alpha-beta pruning, a optimization strategy for
     branch cutting.
     """
 
-    def search(self):
-        self.started_at = time.time()
-        self.solution_candidate_ = None
-        best_score = -np.inf
-
-        for c in self.agent.predict(self.root):
-            # Reuses best_score as `a` (this is directly possible because here
-            # we are always maximizing). Also, as `b` is never updated
-            # pruning will never happen at this level and therefore it was
-            # simply not coded.
-            c_score = self._alpha_beta_policy(c, a=best_score)
-
-            if best_score < c_score:
-                self.solution_candidate_ = c
-                best_score = c_score
-
-        return self
-
-    def _alpha_beta_policy(self, state, depth=1, a=-np.inf, b=np.inf):
-        if (depth > self.depth_limit or
-            time.time() - self.started_at > self.time_limit):
-            # Constraints violated.
-            return self.agent.utility(state)
-
+    def _selection_policy(self, state, depth=1, a=-np.inf, b=np.inf):
+        """Alpha Beta Pruning Policy."""
         children = self.agent.predict(state)
-        if not children:
-            # Terminal state.
+        if (depth > self.depth_limit or not children or
+                        time.time() - self.started_at > self.time_limit):
             return self.agent.utility(state)
 
         v, interest = ((-np.inf, max)
-                        if depth % 2 == self.MAXIMIZE
-                        else (np.inf, min))
-
+                       if self.should_maximize_at(depth)
+                       else (np.inf, min))
         for c in children:
-            v = interest(v, self._alpha_beta_policy(c, depth + 1, a, b))
+            v = interest(v, self._selection_policy(c, depth + 1, a, b))
 
-            if depth % 2 == self.MAXIMIZE:
+            if self.should_maximize_at(depth):
                 a = interest(a, v)
             else:
                 b = interest(b, v)
 
-            if b <= a:
-                break
+            if b <= a: break
 
         return v

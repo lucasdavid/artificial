@@ -34,9 +34,8 @@ def make_spiral(n_samples=1000, n_components=2, n_classes=2,
     [1] Spiral Data set.
         "Convolutional Neural Networks for Visual Recognition", [Online],
         available at: <http://cs231n.github.io/neural-networks-case-study/>
-    """
->>>>>>> nn-training
 
+    """
     random_state = random_state or np.random.RandomState()
 
     n_group_size = n_samples // n_classes
@@ -55,21 +54,34 @@ def make_spiral(n_samples=1000, n_components=2, n_classes=2,
         y[indices] = j
 
     return X, y
-<<<<<<< HEAD
-=======
 
 
-def iris(n_features=4):
-    with open('data/iris.csv', 'rt', encoding='utf-8') as csv_file:
+def load(data_set_name):
+    """Load a data set from the disk.
+
+    Parameters
+    ----------
+    data_set_name: str
+        The name of the data-set to be loaded.
+
+    Returns
+    -------
+    X, y: tuple
+        A tuple with `X` - the samples and their features - and y, an array
+        containing each sample's class.
+    """
+    if not data_set_name.startswith('data/'):
+        data_set_name = 'data/' + data_set_name
+
+    with open(data_set_name, 'rt', encoding='utf-8') as csv_file:
         lines = csv.reader(csv_file, delimiter=',')
 
         X = np.array(list(lines))
 
         y = X[:, -1]
-        X = X[:, :n_features].astype(float)
+        X = X[:, :-1].astype(float)
 
         attributes = dict(zip(set(y), range(y.shape[0])))
         y = np.array([attributes[a] for a in y])
 
     return X, y
->>>>>>> nn-training

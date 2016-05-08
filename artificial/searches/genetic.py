@@ -92,7 +92,7 @@ class GeneticAlgorithm(base.Base):
 
     mutation_factor: float, default=.05
         If the problem at hand accepts many different values for genes, and
-        said values are enumerable, `mutation_factor` describes how lengthly
+        said values are enumerable, `mutation_factor` describes how strongly
         a gene is affected by mutation.
 
         For instance, a gene is "completely" affected if `mutation_factor == 1`,
@@ -272,6 +272,7 @@ class GeneticAlgorithm(base.Base):
                     group.append(c)
 
             except StopIteration:
+                # We're finished!
                 pass
             except:
                 raise
@@ -359,16 +360,14 @@ class GeneticAlgorithm(base.Base):
 
             if self.debug:
                 if self.max_evolution_cycles:
-                    e = self.max_evolution_cycles // 10
-                    if self.cycle_ % e == 0:
-                        print('Cycle %i of %i (%.2f%%).'
+                    progress = int(100 * self.cycle_ / self.max_evolution_cycles)
+
+                    if self.cycle_ % (self.max_evolution_cycles // 10) == 0:
+                        print('Cycle %i of %i (%i%%).'
                               % (self.cycle_, self.max_evolution_cycles,
-                                 self.cycle_/self.max_evolution_cycles))
-
+                                 progress))
             self.evolve()
-
         self.search_dispose()
-
         return self
 
     def search_start(self):
@@ -396,10 +395,8 @@ class GeneticAlgorithm(base.Base):
                 utility_elapsed = time.time() - utility_elapsed
                 del individual
 
-                # Only 90% is used, as there are other time consuming jobs
-                # during a cycle, such as breeding, mutation and selection.
                 # Finally, lower bound value by 100.
-                self.population_size_ = int(.9 * self.n_jobs_ * duration /
+                self.population_size_ = int(2 * self.n_jobs_ * duration /
                                             utility_elapsed / cycles)
                 self.population_size_ = max(100, self.population_size_)
         else:
@@ -549,7 +546,7 @@ class GeneticAlgorithm(base.Base):
         elif self.breeding_selection == 'tournament':
             self.selected_ = [max(random.choice(self.population_,
                                                 size=self.tournament_size_),
-                                  key=lambda i: -self.agent.utility(i))
+                                  key=lambda i: self.agent.utility(i))
                               for _ in range(self.n_selected_)]
 
         elif self.breeding_selection == 'roulette':

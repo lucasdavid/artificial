@@ -1,6 +1,8 @@
 import abc
 import copy as copy_lib
 
+import six
+
 
 class State:
     """State.
@@ -144,14 +146,38 @@ class State:
         raise NotImplementedError
 
 
-class GeneticState(State, metaclass=abc.ABCMeta):
+@six.add_metaclass(abc.ABCMeta)
+class GeneticState(State):
     """Genetic State.
 
     State abstraction for searches using `GeneticAlgorithm` class.
 
     """
+    @abc.abstractmethod
     def cross(self, other):
-        raise NotImplementedError
+        """The cross operator that produces new individuals from two
+        existing ones.
 
+        Parameters
+        ----------
+        other : GeneticState-like object.
+
+        Returns
+        -------
+        GeneticState-like object. The offspring.
+        """
+
+    @abc.abstractmethod
     def mutate(self, factor, probability):
-        raise NotImplementedError
+        """The mutation operator that changes the current individual.
+
+        Parameters
+        ----------
+        factor : the factor which scales the area affected of a mutation.
+        probability : the probability of a gene to mutate.
+
+        Returns
+        -------
+        Always return self!
+
+        """

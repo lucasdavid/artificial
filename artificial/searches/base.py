@@ -5,14 +5,16 @@
 
 import abc
 
+import six
+
 from artificial import agents
 
 
-class Base(metaclass=abc.ABCMeta):
+@six.add_metaclass(abc.ABCMeta)
+class Base:
     """Base Search.
 
     Common interface for searches, including agent, space and root properties.
-
 
     Parameters
     ----------
@@ -60,6 +62,7 @@ class Base(metaclass=abc.ABCMeta):
 
         return self
 
+    @abc.abstractmethod
     def search(self):
         """Search for solution candidate.
 
@@ -68,7 +71,6 @@ class Base(metaclass=abc.ABCMeta):
         return `self` object.
 
         """
-        raise NotImplementedError
 
     def backtrack(self):
         """Backtrack answer.
