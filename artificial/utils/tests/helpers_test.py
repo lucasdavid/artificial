@@ -1,9 +1,11 @@
 from unittest import TestCase
-from unittest.mock import MagicMock
 
-import artificial as at
+try:
+    from unittest.mock import MagicMock
+except ImportError:
+    from mock import MagicMock
+
 from artificial.utils import PriorityQueue
-from artificial.utils.helpers import live
 
 
 class PriorityQueueTest(TestCase):
@@ -89,35 +91,3 @@ class PriorityQueueTest(TestCase):
 
         q.add('one')
         self.assertTrue(q)
-
-
-class _E(at.base.Environment):
-    def update(self):
-        """Updates nothing"""
-
-
-class LiveTest(TestCase):
-    def setUp(self):
-        self.env = _E(at.base.State(140202))
-        self.env.build = MagicMock(side_effect=lambda: self.env)
-        self.env.update = MagicMock(side_effect=lambda: self.env)
-
-    def test_live(self):
-        expected_cycles = 5
-        live(self.env, n_cycles=expected_cycles)
-        self.env.build.assert_any_call()
-        self.env.update.assert_any_call()
-
-        live(self.env, n_cycles=expected_cycles, verbose=True)
-        self.env.build.assert_any_call()
-        self.env.update.assert_any_call()
-
-        self.env.update = MagicMock(side_effect=KeyboardInterrupt)
-
-        live(self.env, n_cycles=expected_cycles)
-        self.env.build.assert_any_call()
-        self.env.update.assert_any_call()
-
-        live(self.env, n_cycles=expected_cycles, verbose=True)
-        self.env.build.assert_any_call()
-        self.env.update.assert_any_call()

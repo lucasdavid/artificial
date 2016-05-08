@@ -1,5 +1,20 @@
-from artificial import agents, base
-from artificial.searches import fringe as searches
+"""Romania Path Finding Example.
+
+This example shows how A* can be used by an agent to find the best path
+between two cities (defined by `source_city_id` and `target_city_id`
+class attributes in `Romania` class).
+
+Author: Lucas David -- <ld492@drexel.edu>
+License: MIT (c) 2016
+
+"""
+
+import logging
+
+import artificial as art
+
+logger = logging.getLogger('artificial')
+logger.setLevel(logging.DEBUG)
 
 
 class Graph:
@@ -10,7 +25,7 @@ class Graph:
         self.directed = directed
 
 
-class CityState(base.State):
+class CityState(art.base.State):
     @property
     def is_goal(self):
         return self.data == Romania.target_city_id
@@ -20,10 +35,10 @@ class CityState(base.State):
 
     def __str__(self):
         return '%s, g: %d, h: %d' % (
-        Romania.g.nodes[self.data], self.g, self.h())
+            Romania.g.nodes[self.data], self.g, self.h())
 
 
-class Romania(base.Environment):
+class Romania(art.base.Environment):
     g = Graph(
         nodes=['Arad', 'Oradea', 'Zerind', 'Timisoara', 'Lugoj', 'Mehadia',
                'Dorbeta', 'Sibiu', 'Fagaras', 'Rimnicu Vilcea', 'Craiova',
@@ -53,8 +68,12 @@ class Romania(base.Environment):
         })
 
     source_city_id = 0
-    target_city_id = 11
+    target_city_id = 19
     real_cost = 0
+
+    def build(self):
+        self.real_cost = 0
+        return self
 
     def update(self):
         for agent in self.agents:
@@ -63,17 +82,16 @@ class Romania(base.Environment):
 
             current = self.current_state.data
 
-            if next_city is None or \
-                            current == next_city or \
-                            next_city not in Romania.g.edges[current]:
+            if (next_city is None or current == next_city or
+                        next_city not in Romania.g.edges[current]):
                 # Invalid transition or non-existent road.
                 continue
 
-            self.current_state = CityState(next_city)
             self.real_cost += Romania.g.edges[current][next_city]
+            self.current_state = CityState(next_city, g=self.real_cost)
 
 
-class RoutePlanner(agents.UtilityBasedAgent):
+class RoutePlanner(art.agents.UtilityBasedAgent):
     def predict(self, state):
         current = state.data
         neighbors = [city for city in self.actions
@@ -85,36 +103,35 @@ class RoutePlanner(agents.UtilityBasedAgent):
 
 
 def main():
-    print('===========================')
-    print('Romania Path Finding Example')
-    print('===========================\n')
+    print(__doc__)
 
     env = Romania(initial_state=CityState(0))
 
     env.agents += [
-        RoutePlanner(environment=env,
-                     search=searches.AStar,
-                     actions=list(range(20)),
-                     verbose=True)
+        RoutePlanner(
+            environment=env,
+            # A* Search.
+            search=art.searches.fringe.AStar,
+            # Signal that the agent can travel to ANY city
+            # (see `RoutePlanner.predict` method)
+            actions=list(range(20)))
     ]
 
     i, max_iterations = 0, 14
 
     print('Initial state: {%s}\n' % str(env.current_state))
 
-    try:
-        while i < max_iterations and not env.finished():
-            i += 1
-            env.update()
+    env.build()
 
-            print('#%i: {%s}' % (i, str(env.current_state)))
+    while i < max_iterations and not env.finished():
+        env.update()
 
-        print('Solution found! (cost: %.1f) :-)' % env.real_cost
-              if env.current_state.is_goal
-              else 'Solution not found. :-(')
+        print('#%i: {%s}' % (i, str(env.current_state)))
+        i += 1
 
-    except KeyboardInterrupt:
-        pass
+    print('\nSolution found! :-)'
+          if env.current_state.is_goal
+          else 'Solution not found. :-(')
 
 
 if __name__ == '__main__':

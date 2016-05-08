@@ -1,5 +1,12 @@
+"""Artificial States"""
+
+# Author: Lucas David -- <ld492@drexel.edu>
+# License: MIT (c) 2016
+
 import abc
 import copy as copy_lib
+
+import six
 
 
 class State:
@@ -123,6 +130,9 @@ class State:
             return hash(str(self.data))
 
     def __str__(self):
+        if self.action is None:
+            return ('data: %s, g: %d' % (str(self.data), self.g))
+
         return ('data: %s, action: %s, g: %d'
                 % (str(self.data), self.action, self.g))
 
@@ -144,14 +154,38 @@ class State:
         raise NotImplementedError
 
 
-class GeneticState(State, metaclass=abc.ABCMeta):
+class GeneticState(State):
     """Genetic State.
 
     State abstraction for searches using `GeneticAlgorithm` class.
 
     """
+
     def cross(self, other):
+        """The cross operator that produces new individuals from two
+        existing ones.
+
+        Parameters
+        ----------
+        other : GeneticState-like object.
+
+        Returns
+        -------
+        GeneticState-like object. The offspring.
+        """
         raise NotImplementedError
 
     def mutate(self, factor, probability):
+        """The mutation operator that changes the current individual.
+
+        Parameters
+        ----------
+        factor : the factor which scales the area affected of a mutation.
+        probability : the probability of a gene to mutate.
+
+        Returns
+        -------
+        Always return self!
+
+        """
         raise NotImplementedError

@@ -5,12 +5,15 @@
 
 import abc
 
+import six
+
 from . import base
 from .. import agents
 from ..utils import PriorityQueue
 
 
-class FringeBase(base.Base, metaclass=abc.ABCMeta):
+@six.add_metaclass(abc.ABCMeta)
+class FringeBase(base.SearchBase):
     """Fringe Base Search.
 
     Base class for searchers that rely on the concept of fringe.
@@ -25,12 +28,12 @@ class FringeBase(base.Base, metaclass=abc.ABCMeta):
     """
 
     def __init__(self, agent, root=None):
-        super().__init__(agent=agent, root=root)
+        super(FringeBase, self).__init__(agent=agent, root=root)
 
         self.fringe_ = list(self.space_) if self.space_ else []
 
     def restart(self, root):
-        super().restart(root=root)
+        super(FringeBase, self).restart(root=root)
         self.fringe_ = list(self.space_)
 
         return self
@@ -50,10 +53,11 @@ class FringeBase(base.Base, metaclass=abc.ABCMeta):
 
         return self
 
+    @abc.abstractmethod
     def extract(self):
         """Fringe extraction policy"""
-        raise NotImplementedError
 
+    @abc.abstractmethod
     def expand(self, state):
         """Fringe expansion policy.
 
@@ -63,7 +67,6 @@ class FringeBase(base.Base, metaclass=abc.ABCMeta):
                 State that should be expanded.
 
         """
-        raise NotImplementedError
 
 
 class BreadthFirst(FringeBase):
@@ -94,7 +97,7 @@ class UniformCost(FringeBase):
     """
 
     def __init__(self, agent, root=None):
-        super().__init__(agent=agent, root=root)
+        super(UniformCost, self).__init__(agent=agent, root=root)
 
         assert isinstance(agent, agents.UtilityBasedAgent), \
             'Uniform Cost Search requires an utility based agent.'
@@ -105,7 +108,7 @@ class UniformCost(FringeBase):
             self.fringe_.add(self.root)
 
     def restart(self, root):
-        super().restart(root=root)
+        super(UniformCost, self).restart(root=root)
 
         self.fringe_ = PriorityQueue()
         self.fringe_.add(self.root)
@@ -119,8 +122,9 @@ class UniformCost(FringeBase):
         self.space_.add(state)
 
         for child in self.agent.predict(state):
-            if child not in self.space_ and (child not in self.fringe_ or
-                                             child.g < self.fringe_[child][0]):
+            if (child not in self.space_ and
+                (child not in self.fringe_ or
+                 child.g < self.fringe_[child][0])):
                 # Expanded nodes were already optimally reached.
                 # Just ignore these instances instance.
                 # This is either a new state or its costs is smaller than
@@ -138,6 +142,7 @@ class GreedyBestFirst(UniformCost):
     solution quickly and without the need to expand too many states.
 
     """
+
     def expand(self, state):
         self.space_.add(state)
 
@@ -161,6 +166,7 @@ class AStar(UniformCost):
     is admissible and consistent.
 
     """
+
     def expand(self, state):
         self.space_.add(state)
 
@@ -210,7 +216,7 @@ class DepthFirst(FringeBase):
     """
 
     def __init__(self, agent, root=None, prevent_cycles=False, limit=None):
-        super().__init__(agent=agent, root=root)
+        super(DepthFirst, self).__init__(agent=agent, root=root)
 
         self.prevent_cycles = prevent_cycles
         self.limit = limit
@@ -252,7 +258,7 @@ class DepthFirst(FringeBase):
         self.fringe_ = children + self.fringe_
 
 
-class IterativeDeepening(base.Base):
+class IterativeDeepening(base.SearchBase):
     """Iterative Deepening Search.
 
     Taking an iterative, executes `DepthLimited` passing the iteration's
@@ -287,7 +293,7 @@ class IterativeDeepening(base.Base):
 
     def __init__(self, agent, root=None, prevent_cycles=False,
                  iterations=range(10)):
-        super().__init__(agent=agent, root=root)
+        super(IterativeDeepening, self).__init__(agent=agent, root=root)
 
         self.iterations = iterations
         self.depth_limited = DepthFirst(agent=agent, root=root,

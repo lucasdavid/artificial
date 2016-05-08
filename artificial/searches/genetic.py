@@ -2,21 +2,28 @@
 
 # Author: Lucas David -- <ld492@drexel.edu>
 # License: MIT (c) 2016
-
+import logging
 import math
 import multiprocessing
-import queue
 import threading
 import time
 
 import numpy as np
 from scipy.spatial import distance
 
-from . import base
-from .. import agents
+try:
+    from queue import Queue
+except ImportError:
+    from Queue import Queue
+
+from .base import SearchBase
+from ..agents import UtilityBasedAgent
+from ..base import GeneticState
+
+logger = logging.getLogger('artificial')
 
 
-class GeneticAlgorithm(base.Base):
+class GeneticAlgorithm(SearchBase):
     """Genetic Algorithm Search.
 
     Parameters
@@ -92,7 +99,7 @@ class GeneticAlgorithm(base.Base):
 
     mutation_factor: float, default=.05
         If the problem at hand accepts many different values for genes, and
-        said values are enumerable, `mutation_factor` describes how lengthly
+        said values are enumerable, `mutation_factor` describes how strongly
         a gene is affected by mutation.
 
         For instance, a gene is "completely" affected if `mutation_factor == 1`,
@@ -196,10 +203,11 @@ class GeneticAlgorithm(base.Base):
         def __init__(self, worker_id, manager):
             # Use daemon option, as we want to
             # make the disposing process async.
-            super().__init__(daemon=True)
+            super(GeneticAlgorithm._Worker, self).__init__()
 
             self.id = worker_id
             self.manager = manager
+            self.daemon = True
 
         def run(self):
             while True:
@@ -241,7 +249,7 @@ class GeneticAlgorithm(base.Base):
                 # were added by ceiling the division above.
                 group_size -= collection_size % self.manager.n_jobs_
 
-            return group_size
+            return int(group_size)
 
         def generate_population(self):
             state_c = self.manager.agent.environment.state_class_
@@ -266,12 +274,17 @@ class GeneticAlgorithm(base.Base):
             try:
                 while True:
                     a, b = next(selected), next(selected)
-                    c = a.cross(b).mutate(self.manager.mutation_factor,
-                                          self.manager.mutation_probability)
+                    cs = a.cross(b)
 
-                    group.append(c)
+                    if isinstance(cs, GeneticState):
+                        cs = [cs]
+
+                    group += [c.mutate(self.manager.mutation_factor,
+                                       self.manager.mutation_probability)
+                              for c in cs]
 
             except StopIteration:
+                # We're finished!
                 pass
             except:
                 raise
@@ -293,10 +306,10 @@ class GeneticAlgorithm(base.Base):
                  n_jobs=1,
                  debug=False,
                  random_state=None):
-        super().__init__(agent=agent)
+        super(GeneticAlgorithm, self).__init__(agent=agent)
 
-        assert isinstance(agent, agents.UtilityBasedAgent), \
-            'Local searches require an utility based agent.'
+        assert isinstance(agent, UtilityBasedAgent), \
+            'Genetic searches require an utility based agent.'
 
         self.population_size = population_size
         self.max_evolution_cycles = max_evolution_cycles
@@ -318,17 +331,14 @@ class GeneticAlgorithm(base.Base):
         self.lock = threading.Lock()
 
         # Properties.
-        self.population_size_ = self.population_ = self.tournament_size_ = None
-        self.selected_ = self.n_selected_ = self.offspring_ = None
-        self.started_at_ = self.n_jobs_ = None
+        self.population_size_ = self.population_ = self.tournament_size_ = \
+            self.selected_ = self.n_selected_ = self.offspring_ = \
+            self.started_at_ = self.n_jobs_ = None
 
         # Statistics.
-        self.generations_variability_ = None
-        self.average_utility_ = None
-        self.highest_utility_ = None
-        self.lowest_utility_ = None
-        self.variability_ = 0
-        self.cycle_ = 0
+        self.generations_variability_ = self.average_utility_ = \
+            self.highest_utility_ = self.lowest_utility_ = None
+        self.variability_ = self.cycle_ = 0
 
     def search(self):
         """Evolve generations while the `continue_evolving` condition is
@@ -357,18 +367,15 @@ class GeneticAlgorithm(base.Base):
         while self.continue_evolving():
             self.cycle_ += 1
 
-            if self.debug:
-                if self.max_evolution_cycles:
-                    e = self.max_evolution_cycles // 10
-                    if self.cycle_ % e == 0:
-                        print('Cycle %i of %i (%.2f%%).'
-                              % (self.cycle_, self.max_evolution_cycles,
-                                 self.cycle_/self.max_evolution_cycles))
+            if self.max_evolution_cycles < np.inf:
+                progress = 100 * self.cycle_ // self.max_evolution_cycles
 
+                if progress % 10 == 0:
+                    logger.info('cycle %i of %i (%i%%)',
+                                self.cycle_, self.max_evolution_cycles,
+                                progress)
             self.evolve()
-
         self.search_dispose()
-
         return self
 
     def search_start(self):
@@ -396,10 +403,8 @@ class GeneticAlgorithm(base.Base):
                 utility_elapsed = time.time() - utility_elapsed
                 del individual
 
-                # Only 90% is used, as there are other time consuming jobs
-                # during a cycle, such as breeding, mutation and selection.
                 # Finally, lower bound value by 100.
-                self.population_size_ = int(.9 * self.n_jobs_ * duration /
+                self.population_size_ = int(2 * self.n_jobs_ * duration /
                                             utility_elapsed / cycles)
                 self.population_size_ = max(100, self.population_size_)
         else:
@@ -446,7 +451,7 @@ class GeneticAlgorithm(base.Base):
             self.generations_variability_ = []
 
         self.workers = []
-        self.tasks = queue.Queue()
+        self.tasks = Queue()
 
         for i in range(self.n_jobs_):
             self.workers.append(self._Worker(worker_id=i, manager=self))
@@ -505,7 +510,6 @@ class GeneticAlgorithm(base.Base):
         # Find who is the fittest.
         self.solution_candidate_ = max(self.population_,
                                        key=lambda i: self.agent.utility(i))
-
         return self
 
     def evolve(self):
@@ -549,19 +553,15 @@ class GeneticAlgorithm(base.Base):
         elif self.breeding_selection == 'tournament':
             self.selected_ = [max(random.choice(self.population_,
                                                 size=self.tournament_size_),
-                                  key=lambda i: -self.agent.utility(i))
+                                  key=lambda i: self.agent.utility(i))
                               for _ in range(self.n_selected_)]
 
         elif self.breeding_selection == 'roulette':
-            # If there are negative values, perform windowing by adding the
-            # minimum value to all individuals' fitness. Any negative utilities
-            # will vanish and the probabilities will sum to 1.
+            # Roulette requires probabilities. Soft-max p!
             p = np.array([self.agent.utility(i)
-                          for i in self.population_]).astype(float)
-            minimum = np.min(p)
-            if minimum < 0:
-                p -= minimum
-            p /= np.sum(p)
+                          for i in self.population_], dtype=float)
+            p = np.exp(p)
+            p /= p.sum()
 
             self.selected_ = random.choice(self.population_,
                                            size=self.n_selected_, p=p)

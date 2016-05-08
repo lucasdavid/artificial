@@ -1,3 +1,8 @@
+"""Artificial Genetic Algorithm Tests"""
+
+# Author: Lucas David -- <ld492@drexel.edu>
+# License: MIT (c) 2016
+
 import string
 import time
 from unittest import TestCase
@@ -176,14 +181,24 @@ class GeneticAlgorithmTest(TestCase):
         self.assertEqual(solution.data, 'hello world')
 
     @parameterized.expand([
-        (dict(natural_selection='elitism', max_evolution_duration=5,
-              mutation_probability=.2), .5),
-        (dict(natural_selection='random', max_evolution_duration=5,
-              mutation_probability=.2), .5),
-        (dict(max_evolution_duration=5, mutation_probability=.2,
-              n_jobs=4, debug=True), 4)
+        ({
+             'natural_selection': 'elitism',
+             'max_evolution_duration': 5,
+             'mutation_probability': .2
+         }, 5.5),
+        ({
+             'natural_selection': 'random',
+             'max_evolution_duration': 5,
+             'mutation_probability': .2
+         }, 5.5),
+        ({
+             'max_evolution_duration': 5,
+             'mutation_probability': .2,
+             'n_jobs': 4,
+             'debug': True
+         }, 5.5)
     ])
-    def test_search_duration_constraint(self, params, acceptable_delta):
+    def test_search_duration_constraint(self, params, acceptable_elapsed):
         ga = genetic.GeneticAlgorithm(self.agent,
                                       random_state=self.random_state,
                                       **params)
@@ -191,10 +206,9 @@ class GeneticAlgorithmTest(TestCase):
         elapsed = time.time()
         ga.search()
         elapsed = time.time() - elapsed
-        delta = abs(elapsed - params['max_evolution_duration'])
 
         # Assert that the duration constraint was respected.
-        self.assertLess(delta, acceptable_delta)
+        self.assertLess(elapsed, acceptable_elapsed)
         self.assertIsNotNone(ga.solution_candidate_)
 
     def test_preemption_by_genetic_similarity(self):

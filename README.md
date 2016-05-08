@@ -3,7 +3,7 @@
 [![Build Status](https://travis-ci.org/lucasdavid/artificial.svg?branch=master)](https://travis-ci.org/lucasdavid/artificial)
 [![Coverage Status](https://coveralls.io/repos/github/lucasdavid/artificial/badge.svg?branch=master)](https://coveralls.io/github/lucasdavid/artificial?branch=master)
 
-A basic API for artificially intelligent agents.
+A basic API for intelligent agents.
 
 ## Introduction
 
@@ -16,6 +16,36 @@ describe a problem (and its solution):
 * **State** A model that holds data for both world and agents. It can be used
             to represent a state of the World or to predict states by agents.
 * **Agent** Abstraction that presents an intelligent behavior.
+
+## Installing
+
+`artificial` is written on Python, and requires `numpy` and `scipy`.
+You can install everything with:
+
+```shell
+git clone https://github.com/lucasdavid/artificial
+cd artificial
+
+python setup.py install --user
+```
+
+To run the examples, matplotlib and scikit-learn are required:
+```
+pip install -r docs/requirements-examples.txt --upgrade --user
+
+cd examples
+python dirt_cleaner.py
+```
+
+To run tests, additional packages are required:
+```shell
+pip install -r docs/requirements-dev.txt --upgrade --user
+
+# Run tests!
+nosetests
+```
+
+The coverage info will be placed inside `coverage` folder.
 
 ## Examples
 ### Genetic Algorithm: Speller Agent
@@ -78,7 +108,7 @@ class Speller(agents.UtilityBasedAgent):
 
 ```
 
-We are left with connecting the dots! :-)
+The only thing left is to connect the dots! :-)
 
 ```py
 world = World(initial_state=WordCandidate.random())

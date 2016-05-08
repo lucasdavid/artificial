@@ -5,18 +5,20 @@
 
 import abc
 
+import six
+
 from artificial import agents
 
 
-class Base(metaclass=abc.ABCMeta):
-    """Base Search.
+@six.add_metaclass(abc.ABCMeta)
+class SearchBase:
+    """Search Base Template.
 
-    Common interface for searches, including agent, space and root properties.
-
+    Defines the basic contract shared between search algorithms,
+    including agent, space and root properties.
 
     Parameters
     ----------
-
     agent : Agent-like
             Agent that requested search. This is needed as only an agent
             of the specific domain problem can predict outcomes based on
@@ -28,7 +30,6 @@ class Base(metaclass=abc.ABCMeta):
 
     Attributes
     ----------
-
     space_ : set
             A set used to contain states and efficient repetition checking.
 
@@ -60,6 +61,7 @@ class Base(metaclass=abc.ABCMeta):
 
         return self
 
+    @abc.abstractmethod
     def search(self):
         """Search for solution candidate.
 
@@ -68,7 +70,6 @@ class Base(metaclass=abc.ABCMeta):
         return `self` object.
 
         """
-        raise NotImplementedError
 
     def backtrack(self):
         """Backtrack answer.

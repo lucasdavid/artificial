@@ -1,34 +1,44 @@
+"""Derivative Finder Example.
+
+This example demonstrates how a artificially intelligent agent can use
+`Hill Climbing` to find the domain point of a function `f` in which this
+functions' derivative is zero.
+
+Author: Lucas David -- <ld492@drexel.edu>
+License: MIT (c) 2016
+
+
+"""
+
 import random
 import time
 
-from artificial import base, agents
-from artificial.searches.local import HillClimbing
+import artificial as art
 
 
-class DerivativeState(base.State):
+class DerivativeState(art.base.State):
     @property
     def is_goal(self):
-        return abs(self.h()) <= FunctionsEnvironment.max_error
-    
+        return abs(self.h()) <= DifferentialEnvironment.max_error
+
     def h(self):
-        f, d, x = (FunctionsEnvironment.actual_f,
-                   FunctionsEnvironment.delta,
+        f, d, x = (DifferentialEnvironment.f,
+                   DifferentialEnvironment.delta,
                    self.data)
 
         return (f(x + d) - f(x - d)) / (2 * d)
 
     def __str__(self):
-        f = FunctionsEnvironment.actual_f
-        return 'f(%.2f)=%.2f, dy/dx = %.2f' % (self.data, f(self.data),
-                                               self.h())
+        f = DifferentialEnvironment.f
+        return 'f(%f)=%f, dy/dx = %f' % (self.data, f(self.data), self.h())
 
     @classmethod
     def random(cls):
         return cls(data=random.random() * 100 - 50)
 
 
-class FunctionsEnvironment(base.Environment):
-    max_error = .1
+class DifferentialEnvironment(art.base.Environment):
+    max_error = .01
     delta = .0008
     failed = False
 
@@ -40,7 +50,14 @@ class FunctionsEnvironment(base.Environment):
     state_class_ = DerivativeState
 
     @staticmethod
-    def actual_f(x):
+    def f(x):
+        """The function being differentiated.
+
+        This is just a toy! In a real application, we might also not know this
+        function, and only have evaluations for specific domain points
+        (ordinary or partial differential equations).
+
+        """
         return -(x - 10) ** 5 + x ** 3
 
     def update(self):
@@ -49,7 +66,8 @@ class FunctionsEnvironment(base.Environment):
             x = agent.act()
 
             if x is None:
-                # When hill climber only fails if it's already on the top.
+                # When hill climber only fails if it's
+                # already on the top of a local maximum.
                 self.failed = True
                 break
 
@@ -59,12 +77,12 @@ class FunctionsEnvironment(base.Environment):
         return self.failed or self.current_state.is_goal
 
 
-class DerivativeFinder(agents.UtilityBasedAgent):
+class DerivativeFinder(art.agents.UtilityBasedAgent):
     def act(self):
         return (self.search
                 .restart(root=self.last_known_state)
                 .search()
-                .solution_candidate
+                .solution_candidate_
                 .data)
 
     def predict(self, state):
@@ -76,28 +94,27 @@ class DerivativeFinder(agents.UtilityBasedAgent):
 
 
 def main():
-    print('================================')
-    print('Polynomial Approximation Example')
-    print('================================\n')
+    print(__doc__)
 
-    env = FunctionsEnvironment(initial_state=DerivativeState(0))
+    env = DifferentialEnvironment(initial_state=DerivativeState(0))
     env.agents += [
         DerivativeFinder(environment=env,
-                         search=HillClimbing,
+                         search=art.searches.local.HillClimbing,
                          search_params=dict(restart_limit=10),
                          actions=(0, 1))]
 
-    print('Initial:  {%s}' % str(env.current_state))
+    print('initial solution candidate:  {%s}' % str(env.current_state))
+
+    env.build()
 
     start = time.time()
 
     try:
+        # Just a single update, not inside a while loop.
         env.update()
-        print('Solution: {%s}' % str(env.current_state))
-
+        print('best solution candidate found: {%s}' % str(env.current_state))
     except KeyboardInterrupt:
-        pass
-
+        print('canceled')
     finally:
         print('\nTime elapsed: %.2f s' % (time.time() - start))
 

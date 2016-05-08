@@ -1,5 +1,6 @@
 language: python
 python:
+  - "2.7"
   - "3.3"
   - "3.4"
   - "3.5"
@@ -16,7 +17,7 @@ install:
   - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy scipy matplotlib nose
   - source activate test-environment
   - python setup.py install
-  - pip install -r requirements-dev.txt
+  - pip install -r docs/requirements-dev.txt
 
 script: nosetests
 

@@ -7,11 +7,14 @@ import abc
 import multiprocessing
 import threading
 
+import six
+
 from . import base
 from .. import agents
 
 
-class Local(base.Base, metaclass=abc.ABCMeta):
+@six.add_metaclass(abc.ABCMeta)
+class Local(base.SearchBase):
     """Base Local Search.
 
     Base class for HillClimbing and LocalBeam searches.
@@ -23,23 +26,23 @@ class Local(base.Base, metaclass=abc.ABCMeta):
 
         Options are:
 
-        --- 'classic' : first child that improves utility is choosen.
+        --- 'classic' : first child that improves utility is chosen.
 
         --- 'steepest-ascent' : child that provides greatest
-                                utility improvement is choosen.
+                                utility improvement is chosen.
 
-    restart_limit : (None|int)
+    restart_limit : int
         Define maximum number of random-restarts.
 
-        If None, classic HillClimbing is performed and no restarts occurr.
-        If limit passed is an integer `i`, the agent will restart `i` times
-        before returning a solution.
+        If `1`, classic HillClimbing is performed and no restarts occur.
+        If limit is passed and it's greater than 1, the agent will restart
+        `i` times before returning a solution.
 
     """
 
     def __init__(self, agent, root=None,
-                 strategy='steepest-ascent', restart_limit=None):
-        super().__init__(agent=agent, root=root)
+                 strategy='steepest-ascent', restart_limit=1):
+        super(Local, self).__init__(agent=agent, root=root)
 
         assert isinstance(agent, agents.UtilityBasedAgent), \
             'Local searches require an utility based agent.'
@@ -52,31 +55,11 @@ class HillClimbing(Local):
     """Hill Climbing Search.
 
     Perform Hill Climbing search according to a designated strategy.
-
-    Parameters
-    ----------
-
-    strategy : ('default'|'steepest-ascent')
-        Defines the climbing policy.
-
-        Options are:
-
-        --- 'classic' : first child that improves utility is chosen.
-
-        --- 'steepest-ascent' : child that provides greatest
-                                utility improvement is chosen.
-
-    restart_limit : (None|int)
-        Define maximum number of random-restarts.
-
-        If None, classic HillClimbing is performed and no restarts occur.
-        If limit passed is an integer `i`, the agent will restart `i` times
-        before returning a solution.
-
     """
 
     def search(self):
         self.solution_candidate_ = self.root
+        strategy_is_classic = self.strategy == 'classic'
 
         current = self.root
         it, limit = 0, self.restart_limit or 1
@@ -90,24 +73,20 @@ class HillClimbing(Local):
 
             while not stalled:
                 children = self.agent.predict(current)
-                utility = self.agent.utility(current)
                 stalled = True
 
                 for child in children:
-                    if self.agent.utility(child) > utility:
+                    if self.agent.utility(child) > self.agent.utility(current):
                         current = child
                         stalled = False
 
-                        if self.strategy == 'classic':
-                            # Classic strategy always takes the first
-                            # child that improves utility.
-                            # I do NOT appreciate having to check for classic
-                            # strategy every child, and I'd very much like
-                            # this to change for something more efficient.
-                            break
+                        # Classic strategy always takes the first
+                        # child that improves utility.
+                        if strategy_is_classic: break
 
             if (not self.solution_candidate_ or self.agent.utility(current) >
-                    self.agent.utility(self.solution_candidate_)):
+                self.agent.utility(self.solution_candidate_)):
+                # We've just found a better solution!
                 self.solution_candidate_ = current
 
             # Force random restart.
@@ -136,18 +115,17 @@ class LocalBeam(Local):
         --- 'steepest-ascent' : child that provides greatest
                                 utility improvement is choosen.
 
-    restart_limit : (None|int)
+    restart_limit : int
         Define maximum number of random-restarts.
 
-        If None, classic HillClimbing is performed and no restarts occurr.
-        If limit passed is an integer `i`, the agent will restart `i` times
-        before returning a solution.
-
+        If `1`, classic HillClimbing is performed and no restarts occur.
+        If limit is passed and it's greater than 1, the agent will restart
+        `i` times before returning a solution.
     """
 
     class Beam(threading.Thread):
         def __init__(self, manager):
-            super().__init__()
+            super(LocalBeam.Beam, self).__init__()
 
             self.manager = manager
             self.hill_climber = HillClimbing(agent=manager.agent,
@@ -158,31 +136,28 @@ class LocalBeam(Local):
 
             while it < limit:
                 it += 1
-                state = (self.hill_climber
-                         .search()
-                         .solution_candidate_)
+                state = self.hill_climber.search().solution_candidate_
 
                 with self.manager._solution_update_lock:
                     if (not self.manager.solution_candidate_ or
-                        self.manager.agent.utility(state) >
-                            self.manager.agent.utility(
-                                self.manager.solution_candidate_)):
+                                self.manager.agent.utility(state) >
+                                self.manager.agent.utility(
+                                    self.manager.solution_candidate_)):
                         self.manager.solution_candidate_ = state
 
     def __init__(self, agent, root=None, k='auto',
-                 strategy='steepest-ascent', restart_limit=None):
-        super().__init__(agent=agent,
-                         root=root,
-                         strategy=strategy,
-                         restart_limit=restart_limit)
+                 strategy='steepest-ascent', restart_limit=1):
+        super(LocalBeam, self).__init__(agent=agent,
+                                        root=root,
+                                        strategy=strategy,
+                                        restart_limit=restart_limit)
         self.k = k
         self.beams = None
         self._solution_update_lock = threading.Lock()
 
     def restart(self, root):
-        super().restart(root=root)
+        super(LocalBeam, self).restart(root=root)
         self.beams = None
-
         return self
 
     def search(self):
@@ -197,10 +172,7 @@ class LocalBeam(Local):
 
         self.beams = [self.Beam(self) for _ in range(k)]
 
-        for beam in self.beams:
-            beam.start()
-
-        for beam in self.beams:
-            beam.join()
+        for beam in self.beams: beam.start()
+        for beam in self.beams: beam.join()
 
         return self
