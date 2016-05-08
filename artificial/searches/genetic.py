@@ -1,4 +1,4 @@
-"""Genetic algorithm for problem solving"""
+"""Genetic Algorithm for Problem Solving."""
 
 # Author: Lucas David -- <ld492@drexel.edu>
 # License: MIT (c) 2016
@@ -356,6 +356,15 @@ class GeneticAlgorithm(base.Base):
 
         while self.continue_evolving():
             self.cycle_ += 1
+
+            if self.debug:
+                if self.max_evolution_cycles:
+                    e = self.max_evolution_cycles // 10
+                    if self.cycle_ % e == 0:
+                        print('Cycle %i of %i (%.2f%%).'
+                              % (self.cycle_, self.max_evolution_cycles,
+                                 self.cycle_/self.max_evolution_cycles))
+
             self.evolve()
 
         self.search_dispose()
@@ -390,10 +399,9 @@ class GeneticAlgorithm(base.Base):
                 # Only 90% is used, as there are other time consuming jobs
                 # during a cycle, such as breeding, mutation and selection.
                 # Finally, lower bound value by 100.
-                self.population_size_ = max(
-                    100,
-                    int(
-                        .9 * self.n_jobs_ * duration / utility_elapsed / cycles))
+                self.population_size_ = int(.9 * self.n_jobs_ * duration /
+                                            utility_elapsed / cycles)
+                self.population_size_ = max(100, self.population_size_)
         else:
             raise ValueError('Illegal value for population size {%i}.'
                              % self.population_size)
@@ -452,7 +460,7 @@ class GeneticAlgorithm(base.Base):
         for _ in range(self.n_jobs_):
             # Signal workers to stop, but don't wait for
             # it to actually happen. No point on doing that.
-            self.tasks.put(None)
+            self.tasks.put_nowait(None)
 
         self.workers = None
         self.tasks = None
@@ -491,7 +499,7 @@ class GeneticAlgorithm(base.Base):
         self.population_ = []
 
         for _ in range(self.n_jobs_):
-            self.tasks.put('generate_population')
+            self.tasks.put_nowait('generate_population')
         self.tasks.join()
 
         # Find who is the fittest.
@@ -569,7 +577,7 @@ class GeneticAlgorithm(base.Base):
         self.offspring_ = []
 
         for _ in range(self.n_jobs_):
-            self.tasks.put('breed')
+            self.tasks.put_nowait('breed')
         self.tasks.join()
 
         return self

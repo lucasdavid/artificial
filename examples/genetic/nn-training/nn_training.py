@@ -1,4 +1,4 @@
-"""Neural Networks initialization and training with genetic algorithms"""
+"""Neural Networks Training with Genetic Algorithms."""
 
 # Author: Lucas David -- <ld492@drexel.edu>
 # License: MIT (c) 2016
@@ -27,48 +27,75 @@ def plot_decision_boundary(X, y, l):
     plt.scatter(X[:, 0], X[:, 1], c=y, cmap=plt.cm.Spectral)
 
 
-# Parameters which define the problem.
-data_params = dict(
-    n_samples=300,
-    n_components=2,
-    n_classes=3,
-    random_state=random_state
-)
+execute_following_training = [
+    # Training Iris data set.
+    dict(
+        dataset=lambda: datasets.iris(n_features=2),
+        nn_params=dict(
+            architecture=(2, 40, 3),
+            n_epochs=200,
+            learning_rate=.1,
+            regularization=.001,
+            random_state=random_state,
+        ),
+        search_params=dict(
+            max_evolution_duration=10 * 60,
+            # max_evolution_cycles=np.inf,
+            # min_genetic_similarity=0,
+            population_size=1000,
+            mutation_factor=.2,
+            mutation_probability=.1,
+            # n_selected=1.0,
+            # breeding_selection='roulette',
+            # tournament_size=.5,
+            # natural_selection='steady-state',
+            # n_jobs=1,
+            # debug=True,
+            random_state=random_state,
+        ),
+        settings=dict(
+            plotting=True
+        ),
+    ),
 
-# Parameters for `GeneticAlgorithm` search.
-search_params = dict(
-    max_evolution_duration=10,
-    # max_evolution_cycles=np.inf,
-    # min_genetic_similarity=0,
-    population_size=100,
-    mutation_factor=.2,
-    mutation_probability=.1,
-    # n_selected=1.0,
-    # breeding_selection='roulette',
-    # tournament_size=.5,
-    # natural_selection='steady-state',
-    # n_jobs=1,
-    debug=True,
-    random_state=random_state,
-)
-
-# Parameters used to instantiate NNs.
-nn_params = dict(
-    architecture=(2, 40, 3),
-    n_epochs=50,
-    learning_rate=.1,
-    regularization=.001,
-    random_state=random_state,
-)
-
-# Plotting decision boundaries.
-exec_params = dict(
-    plotting=True
-)
+    # Training Spiral data set.
+    dict(
+        dataset=lambda: datasets.make_spiral(
+            n_samples=300, n_components=2, n_classes=3,
+            random_state=random_state),
+        nn_params=dict(
+            architecture=(2, 40, 3),
+            n_epochs=200,
+            learning_rate=.1,
+            regularization=.001,
+            random_state=random_state,
+        ),
+        search_params=dict(
+            max_evolution_duration=10 * 60,
+            mutation_factor=1,
+            mutation_probability=.1,
+            debug=True,
+            random_state=random_state,
+        ),
+        settings=dict(
+            plotting=True
+        ),
+    )
+]
 
 
-class LayeredNN:
-    """Fully Connected layered Neural Network."""
+class NN:
+    """Fully Connected, 3-Layered Artificial Neural Network.
+
+    This class is an adaption from Britz original implementation in [1].
+
+    References
+    ----------
+    [1] D. Britz. (2015). IMPLEMENTING A NEURAL NETWORK FROM SCRATCH IN
+    PYTHON – AN INTRODUCTION [Online]. Available:
+    http://www.wildml.com/2015/09/implementing-a-neural-network-from-scratch/
+
+    """
 
     def __init__(self, architecture, learning_rate=1e0,
                  regularization=1e-4, n_epochs=1000, copy=True, verbose=False,
@@ -82,6 +109,7 @@ class LayeredNN:
         self.random_state = random_state or np.random.RandomState()
 
         self.W_ = self.b_ = None
+        self._X = self._y = None
 
     def random_build(self):
         """Build NN architecture randomly"""
@@ -106,11 +134,13 @@ class LayeredNN:
         return self
 
     def fit(self, X, y):
+        X = X.copy() if self.copy else X
+
+        self._X, self._y = X, y
+
         if self.W_ is None:
             # If architecture graph's weights aren't defined, set it randomly.
             self.random_build()
-
-        X = X.copy() if self.copy else X
 
         for i in range(0, self.n_epochs):
             W1, W2 = self.W_
@@ -121,10 +151,11 @@ class LayeredNN:
             a1 = np.tanh(z1)
             z2 = a1.dot(W2) + b2
             exp_scores = np.exp(z2)
-            probs = exp_scores / np.sum(exp_scores, axis=1, keepdims=True)
+            probabilities = (exp_scores /
+                             np.sum(exp_scores, axis=1, keepdims=True))
 
-            # Backpropagation.
-            delta3 = probs
+            # Back-propagation.
+            delta3 = probabilities
             delta3[range(X.shape[0]), y] -= 1
             dW2 = a1.T.dot(delta3)
             db2 = np.sum(delta3, axis=0, keepdims=True)
@@ -143,11 +174,11 @@ class LayeredNN:
             b2 += -self.learning_rate * db2
 
             if self.verbose and i % 1000 == 0:
-                print("Loss after iteration %i: %f" % (i, self.loss(X)))
+                print("Loss after iteration %i: %f" % (i, self.loss(X, y)))
 
         return self
 
-    def loss(self, X):
+    def loss(self, X, y):
         W1, W2 = self.W_
         b1, b2 = self.b_
 
@@ -155,28 +186,30 @@ class LayeredNN:
         a1 = np.tanh(z1)
         z2 = a1.dot(W2) + b2
         exp_scores = np.exp(z2)
-        probs = exp_scores / np.sum(exp_scores, axis=1, keepdims=True)
+        probabilities = exp_scores / np.sum(exp_scores, axis=1, keepdims=True)
+
         # Calculating the loss
-        corect_logprobs = -np.log(probs[range(X.shape[0]), y])
-        data_loss = np.sum(corect_logprobs)
-        # Add regulatization term to loss (optional)
+        correct_log_probs = -np.log(probabilities[range(X.shape[0]), y])
+        data_loss = np.sum(correct_log_probs)
+
+        # Add regularization term to loss (optional)
         data_loss += (self.regularization / 2 *
                       (np.sum(np.square(W1)) + np.sum(np.square(W2))))
 
         return 1. / X.shape[0] * data_loss
 
-    def predict(self, X):
+    def feedforward(self, X):
         W1, W2 = self.W_
         b1, b2 = self.b_
 
-        # Forward propagation
         z1 = X.dot(W1) + b1
         a1 = np.tanh(z1)
         z2 = a1.dot(W2) + b2
         exp_scores = np.exp(z2)
-        probs = exp_scores / np.sum(exp_scores, axis=1, keepdims=True)
+        return exp_scores / np.sum(exp_scores, axis=1, keepdims=True)
 
-        return np.argmax(probs, axis=1)
+    def predict(self, X):
+        return np.argmax(self.feedforward(X), axis=1)
 
     def score(self, X, y):
         return (self.predict(X).flatten() == y).sum() / X.shape[0]
@@ -192,31 +225,31 @@ class TrainingCandidate(at.base.GeneticState):
         return self.data.b_
 
     def h(self):
-        """Heuristic associated to Training Candidate.
+        """The Heuristic Associated to the Training Candidate.
 
-        `GeneticAlgorithm` naturally selects strong candidates in population
-        :math:`P`. That is, candidates with high associated utility
+        `GeneticAlgorithm` naturally selects strong candidates in the
+        population. That is, candidates with high associated utility
         :math:`u: P \to \mathbb{R}`:
 
         :math:`u(c) := -cost(c) = -(g(c) + h(c)) = -h(c)`
 
-        We therefore minimize the heuristic to maximize the utility.
+        Hence, candidates with low associated heuristic. That means that
+        candidates with low heuristic cost are fitter than candidates with
+        higher heuristic cost.
 
         """
         gnn = self.data
-        y = gnn.predict(World.X)
-
-        return np.sum((y - World.y) ** 2)
+        return np.sum((gnn.predict(World.X) - World.y) ** 2)
 
     def cross(self, other):
-        """Crossover operator.
+        """Crossover Operator.
 
-        Each `n_layers` biparted section of the network is crossovered between
-        two neuralnets of same architecture given `n_layers` cut points.
+        This operator is applied to each `n_layers` bipartite section of this
+        network and other - of same architecture - given `n_layers` cut points.
 
         Returns
         -------
-        A `TrainingCandidate` containig a new neural network with the same
+        A `TrainingCandidate` containing a new neural network with the same
         architecture of its parents.
 
         """
@@ -239,10 +272,26 @@ class TrainingCandidate(at.base.GeneticState):
             b_c = np.hstack((b_a[:, :cut], b_b[:, cut:]))
             b_c_.append(b_c)
 
-        return TrainingCandidate(LayeredNN(**nn_params)
-                                 .custom_build(W_c_, b_c_))
+        nn_params = World.current_execution_params['nn_params']
+        return TrainingCandidate(NN(**nn_params).custom_build(W_c_, b_c_))
 
     def mutate(self, factor, probability):
+        """Mutation Operator.
+
+        Each layer has its connection matrix and bias affected by mutation.
+        Mutation occurs by adding to the current value a random `n \in [-1, 1]`
+        scaled by the mutation `factor`.
+
+        The motivation for this operator is that very good values would
+        only be slightly mutated, instead of corrupted altogether. In the other
+        hand, weak values might be slightly increased, increasing the overall
+        score and maybe securing the individual's survival to the following
+        generation.
+
+        Notice that the expectancy of mutations in `W` and `b` are NOT 0,
+        because each evolution cycle reaps the most weak individuals.
+
+        """
         for layer, (W, b) in enumerate(zip(self.W_, self.b_)):
             mutates = random_state.rand(*W.shape) < probability
             W[mutates] += (2 * random_state.rand() - 1) * factor
@@ -254,92 +303,107 @@ class TrainingCandidate(at.base.GeneticState):
 
     @classmethod
     def random(cls):
-        return TrainingCandidate(LayeredNN(**nn_params).random_build())
+        """Randomly Build Individual."""
+        nn_params = World.current_execution_params['nn_params']
+        return TrainingCandidate(NN(**nn_params).random_build())
 
 
 class World(at.base.Environment):
     state_class_ = TrainingCandidate
+    executions = execute_following_training.copy()
+    current_execution_params = None
 
-    def build(self):
-        X, y = datasets.make_vortex(**data_params)
+    def update(self):
+        if not World.executions:
+            raise RuntimeError('Cannot update. No executions left to work on.')
+
+        # Define workspace (data set of interest).
+        params = World.executions.pop(0)
+        World.current_execution_params = params
+
+        X, y = params['dataset']()
         X = preprocessing.scale(X)
 
-        plt.scatter(X[:, 0], X[:, 1], c=y)
-        plt.show()
+        if params['settings']['plotting']:
+            plt.scatter(X[:, 0], X[:, 1], c=y, cmap=plt.cm.Spectral)
+            plt.show()
 
-        # Separate train and test data.
+        # Separate train (80%) and test data (20%).
         X, X_test, y, y_test = model_selection.train_test_split(
             X, y, train_size=.8, random_state=random_state)
 
-        # Set class attributes.
+        # Set class attributes. We need this for the genetic algorithm.
         World.X, World.X_test, World.y, World.y_test = X, X_test, y, y_test
+
+        trainer = NNTrainer(searches.genetic.GeneticAlgorithm, self,
+                            search_params=params['search_params'])
 
         # Build a regularly trained Neural Network once.
         # We'll use it as base for our benchmarks.
-        World.cnn = LayeredNN(**nn_params)
-        self.train(World.cnn)
+        cnn = NN(**params['nn_params'])
+        self.backpropagation_training(cnn)
 
+        # Ask agent to find a trained net for us.
+        print('Genetic training has started...')
+
+        t = time()
+        training = trainer.act()
+        print('Genetic initiation complete (%i cycles, %f s)'
+              % (trainer.search.cycle_, time() - t))
+
+        if params['settings']['plotting']:
+            # Plotting generations' utilities.
+            plt.plot(trainer.search.lowest_utility_,
+                     color='blue', linewidth=4, label='Lowest')
+            plt.plot(trainer.search.average_utility_,
+                     color='orange', linewidth=4, label='Average')
+            plt.plot(trainer.search.highest_utility_,
+                     color='red', linewidth=4, label='Highest')
+            plt.legend()
+
+            plt.xlabel('generation')
+            plt.ylabel('utility')
+
+            plt.tight_layout()
+            plt.show()
+
+        # Let's cross our fingers!
         # Build a genetically initialized trained Neural Network.
-        World.gnn = LayeredNN(**nn_params)
+        gnn = (NN(**params['nn_params'])
+               .custom_build(training.W_, training.b_))
+        self.evaluate(gnn)
 
-    def update(self):
-        for agent in self.agents:
-            # Ask agent to find a trained net for us.
-            print('Genetic initialization has started...')
-
-            t = time()
-            training = agent.act()
-            print('Genetic initiation complete (%i cycles, %f s)'
-                  % (agent.search.cycle_, time() - t))
-
-            if exec_params['plotting']:
-                # Plotting generations' utilities.
-                plt.plot(agent.search.lowest_utility_,
-                         color='blue', linewidth=4, label='Lowest')
-                plt.plot(agent.search.average_utility_,
-                         color='orange', linewidth=4, label='Average')
-                plt.plot(agent.search.highest_utility_,
-                         color='red', linewidth=4, label='Highest')
-                plt.legend()
-
-                plt.xlabel('generation')
-                plt.ylabel('utility')
-
-                plt.tight_layout()
-                plt.show()
-
-            if not training:
-                continue
-
-            # Let's cross our fingers! (yn)
-            World.gnn.custom_build(training.W_, training.b_)
-
-            # Measures how training goes.
-            self.train(World.gnn)
-
-    def train(self, nn):
+    @staticmethod
+    def backpropagation_training(nn):
         print('Regular training ongoing...')
 
         t = time()
         nn.fit(World.X, World.y)
         print('Training complete (%f s)' % (time() - t))
 
-        if exec_params['plotting']:
+        World.evaluate(nn)
+
+    @staticmethod
+    def evaluate(nn):
+        if World.current_execution_params['settings']['plotting']:
             plot_decision_boundary(World.X, World.y, lambda x: nn.predict(x))
             plt.tight_layout()
             plt.show()
 
-        print('Accuracy score: %f'
-              % nn.score(World.X_test, World.y_test))
-        print('-----------------------\n')
+        print('Accuracy score: %.2f' % nn.score(World.X_test, World.y_test))
 
 
 class NNTrainer(at.agents.UtilityBasedAgent):
     def predict(self, state):
-        """Predicts nothing"""
+        """Predicts nothing."""
 
     def act(self):
-        """Find a training candidate for a ANN"""
+        """Find a training candidate for a Neural Network.
+
+        We have only one action, which is to answer a question:
+        What is a neural network that best predicts my data set classes?
+
+        """
         return (self.search
                 .restart(root=self.last_state)
                 .search()
@@ -351,12 +415,10 @@ def main():
     print('Neural Networks TrainingCandidate Example')
     print('=========================================\n')
 
-    world = World()
-    world.agents = [NNTrainer(searches.genetic.GeneticAlgorithm, world,
-                              search_params=search_params)]
-
-    # Run world for 1 life-cycle.
-    helpers.live(world, n_cycles=1)
+    # Build and update world relative to the data defined by the user. At each
+    # iteration, the world will train and compare neural nets to a specific
+    # data set.
+    helpers.live(World(), n_cycles=len(execute_following_training))
 
 
 if __name__ == '__main__':

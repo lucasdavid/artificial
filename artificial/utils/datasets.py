@@ -1,9 +1,41 @@
+"""Data Set Creator and Loader Util."""
+
+# Author: Lucas David - <ld492@drexel.edu>
+# License: MIT (c) 2016
+
+import csv
 import numpy as np
 
 
-def make_vortex(n_samples=1000, n_components=2, n_classes=2,
+def make_spiral(n_samples=1000, n_components=2, n_classes=2,
                 random_state=None):
-    """Make vortex dataset."""
+    """Spiral Data Set.
+
+    Generates the artificial data set Spiral with the parameters passed.
+
+    Parameters
+    ----------
+    n_samples: int, default=1000
+        The  number of samples of the data set.
+
+    n_components: int, default=2
+        The number of features. That is, the dimensional space in which the
+        data set is embedded.
+
+    n_classes: int, default=2
+        The number of classes assumed by the samples.
+
+    random_state: RandomState, default=None
+        The random state object used for debugging purposes to control
+        randomness.
+
+    References
+    ----------
+    [1] Spiral Data set.
+        "Convolutional Neural Networks for Visual Recognition", [Online],
+        available at: <http://cs231n.github.io/neural-networks-case-study/>
+    """
+>>>>>>> nn-training
 
     random_state = random_state or np.random.RandomState()
 
@@ -23,3 +55,21 @@ def make_vortex(n_samples=1000, n_components=2, n_classes=2,
         y[indices] = j
 
     return X, y
+<<<<<<< HEAD
+=======
+
+
+def iris(n_features=4):
+    with open('data/iris.csv', 'rt', encoding='utf-8') as csv_file:
+        lines = csv.reader(csv_file, delimiter=',')
+
+        X = np.array(list(lines))
+
+        y = X[:, -1]
+        X = X[:, :n_features].astype(float)
+
+        attributes = dict(zip(set(y), range(y.shape[0])))
+        y = np.array([attributes[a] for a in y])
+
+    return X, y
+>>>>>>> nn-training

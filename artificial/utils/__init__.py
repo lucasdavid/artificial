@@ -1,6 +1,7 @@
-"""Artificial util classes"""
+"""Artificial util classes."""
 
 # Author: Lucas David -- <ld492@drexel.edu>
 # License: MIT (c) 2016
 
 from .priority_queue import PriorityQueue
+
