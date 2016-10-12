@@ -7,11 +7,11 @@ import abc
 
 import six
 
-from . import predictable
+from . import predicting
 
 
 @six.add_metaclass(abc.ABCMeta)
-class GoalBasedAgent(predictable.PredictableAgent):
+class GoalBasedAgent(predicting.PredictingAgent):
     """GoalBasedAgent Base.
 
     This class works as a wrapper around goal-based artificial. Obviously,

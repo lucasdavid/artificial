@@ -2,3 +2,4 @@ nose
 nose-parameterized
 coverage
 coveralls
+mock

@@ -4,10 +4,14 @@
 # License: MIT (c) 2016
 
 import abc
+
+import six
+
 from . import base
 
 
-class LearningAgent(base.Agent, metaclass=abc.ABCMeta):
+@six.add_metaclass(abc.ABCMeta)
+class LearningAgent(base.Agent):
     """Agent Base.
 
     Arguments
@@ -28,8 +32,14 @@ class LearningAgent(base.Agent, metaclass=abc.ABCMeta):
 
     """
 
-    def __init__(self, environment, actions=None, model=None, verbose=False):
+    def __init__(self, environment, actions=None, model=None,
+
+                 verbose=False):
         super(LearningAgent, self).__init__(
             environment=environment, actions=actions, verbose=verbose)
 
         self.model = model
+
+    def act(self):
+        y = self.model.predict(self.last_state.data)
+        return self.actions[y]

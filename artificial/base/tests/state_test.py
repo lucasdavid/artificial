@@ -1,3 +1,8 @@
+"""State Test"""
+
+# Author: Lucas David -- <ld492@drexel.edu>
+# License: MIT (c) 2016
+
 import random
 from unittest import TestCase
 

@@ -1,3 +1,8 @@
+"""Artificial Genetic Algorithm Tests"""
+
+# Author: Lucas David -- <ld492@drexel.edu>
+# License: MIT (c) 2016
+
 import string
 import time
 from unittest import TestCase

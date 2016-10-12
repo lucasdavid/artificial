@@ -1,7 +1,12 @@
-"""Knapsack Problem approximation using genetic algorithm"""
+"""Knapsack Example.
 
-# Author: Lucas David -- <ld492@drexel.edu>
-# License: MIT (c) 2016
+This example demonstrates how to approximate the Knapsack problem
+using genetic algorithms.
+
+Author: Lucas David -- <ld492@drexel.edu>
+License: MIT (c) 2016
+
+"""
 
 import time
 
@@ -117,9 +122,7 @@ class Hiker(at.agents.UtilityBasedAgent):
 
 
 def main():
-    print('================')
-    print('Knapsack Problem')
-    print('================\n')
+    print(__doc__)
 
     env = World(initial_state=Bag.random())
     agent = Hiker(environment=env, search=searches.genetic.GeneticAlgorithm,
@@ -150,8 +153,7 @@ def main():
 
         plt.show()
 
-    except KeyboardInterrupt:
-        print('canceled by user')
+    except KeyboardInterrupt: print('canceled by user')
 
 
 if __name__ == '__main__':

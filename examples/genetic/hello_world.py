@@ -1,10 +1,20 @@
+"""Genetic Hello World Example.
+
+This example demonstrates how to use GeneticAlgorithm search to
+find a sequence of characters specified by `WordIndividual.expected`.
+
+Author: Lucas David -- <ld492@drexel.edu>
+License: MIT (c) 2016
+
+"""
+
 import string
 import time
 
 import numpy as np
 import random
-from artificial import base, agents
-from artificial.searches.genetic import GeneticAlgorithm
+
+import artificial as art
 
 random_state = np.random.RandomState(0)
 
@@ -12,7 +22,7 @@ search_params = dict(mutation_probability=.25,
                      max_evolution_duration=10)
 
 
-class WordIndividual(base.GeneticState):
+class WordIndividual(art.base.GeneticState):
     expected = 'hello world'
     alphabet = list(string.ascii_lowercase + ' ')
 
@@ -48,7 +58,7 @@ class WordIndividual(base.GeneticState):
                                                size=len(cls.expected))))
 
 
-class Speller(agents.UtilityBasedAgent):
+class Speller(art.agents.UtilityBasedAgent):
     def act(self):
         return (self.search
                 .search()
@@ -58,7 +68,7 @@ class Speller(agents.UtilityBasedAgent):
         raise RuntimeError('Sorry! I don\'t know how to predict states!')
 
 
-class World(base.Environment):
+class World(art.base.Environment):
     state_class_ = WordIndividual
 
     def update(self):
@@ -70,22 +80,18 @@ class World(base.Environment):
 
 
 def main():
-    print('====================')
-    print('Word Speller Example')
-    print('====================\n')
+    print(__doc__)
 
     env = World(initial_state=WordIndividual.random())
-    agent = Speller(environment=env, search=GeneticAlgorithm,
+    agent = Speller(environment=env,
+                    search=art.searches.genetic.GeneticAlgorithm,
                     search_params=search_params)
     env.agents = [agent]
     start = time.time()
 
-    try:
-        env.update()
-    except KeyboardInterrupt:
-        pass
-    finally:
-        print('\nTime elapsed: %.2f s' % (time.time() - start))
+    try: env.update()
+    except KeyboardInterrupt: pass
+    finally: print('\nTime elapsed: %.2f s' % (time.time() - start))
 
 
 if __name__ == '__main__':

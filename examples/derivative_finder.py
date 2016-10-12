@@ -1,15 +1,25 @@
+"""Derivative Finder Example.
+
+This example demonstrates how a artificially intelligent agent can use
+`Hill Climbing` to find the derivative of the function
+`FunctionsEnvironment.actual_f`.
+
+Author: Lucas David -- <ld492@drexel.edu>
+License: MIT (c) 2016
+
+"""
+
 import random
 import time
 
-from artificial import base, agents
-from artificial.searches.local import HillClimbing
+import artificial as art
 
 
-class DerivativeState(base.State):
+class DerivativeState(art.base.State):
     @property
     def is_goal(self):
         return abs(self.h()) <= FunctionsEnvironment.max_error
-    
+
     def h(self):
         f, d, x = (FunctionsEnvironment.actual_f,
                    FunctionsEnvironment.delta,
@@ -27,7 +37,7 @@ class DerivativeState(base.State):
         return cls(data=random.random() * 100 - 50)
 
 
-class FunctionsEnvironment(base.Environment):
+class FunctionsEnvironment(art.base.Environment):
     max_error = .1
     delta = .0008
     failed = False
@@ -59,7 +69,7 @@ class FunctionsEnvironment(base.Environment):
         return self.failed or self.current_state.is_goal
 
 
-class DerivativeFinder(agents.UtilityBasedAgent):
+class DerivativeFinder(art.agents.UtilityBasedAgent):
     def act(self):
         return (self.search
                 .restart(root=self.last_known_state)
@@ -76,14 +86,12 @@ class DerivativeFinder(agents.UtilityBasedAgent):
 
 
 def main():
-    print('================================')
-    print('Polynomial Approximation Example')
-    print('================================\n')
+    print(__doc__)
 
     env = FunctionsEnvironment(initial_state=DerivativeState(0))
     env.agents += [
         DerivativeFinder(environment=env,
-                         search=HillClimbing,
+                         search=art.searches.local.HillClimbing,
                          search_params=dict(restart_limit=10),
                          actions=(0, 1))]
 
@@ -94,12 +102,8 @@ def main():
     try:
         env.update()
         print('Solution: {%s}' % str(env.current_state))
-
-    except KeyboardInterrupt:
-        pass
-
-    finally:
-        print('\nTime elapsed: %.2f s' % (time.time() - start))
+    except KeyboardInterrupt: pass
+    finally: print('\nTime elapsed: %.2f s' % (time.time() - start))
 
 
 if __name__ == '__main__':

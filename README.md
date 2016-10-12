@@ -19,27 +19,30 @@ describe a problem (and its solution):
 
 ## Installing
 
-`artificial` is written on Python 3.4, and requires numpy, scipy and
-matplotlib. You can install everything with:
+`artificial` is written on Python, and requires `numpy` and `scipy`.
+You can install everything with:
 
 ```shell
 git clone https://github.com/lucasdavid/artificial
 cd artificial
 
-# or python, depends on the system!
-python3 setup.py install
+python setup.py install --user
+```
+
+To run the examples, matplotlib and scikit-learn are required:
+```
+pip install -r docs/requirements-examples.txt --upgrade --user
+
+cd examples
+python dirt_cleaner.py
 ```
 
 To run tests, additional packages are required:
 ```shell
-cd artificial
-
-# or pip, depends on the system!
-pip3 install -r requirements-dev.txt
+pip install -r docs/requirements-dev.txt --upgrade --user
 
 # Run tests!
 nosetests
-
 ```
 
 The coverage info will be placed inside `coverage` folder.
@@ -105,7 +108,7 @@ class Speller(agents.UtilityBasedAgent):
 
 ```
 
-We are left with connecting the dots! :-)
+The only thing left is to connect the dots! :-)
 
 ```py
 world = World(initial_state=WordCandidate.random())

@@ -1,5 +1,15 @@
-from artificial import agents, base
-from artificial.searches import fringe as searches
+"""Romania Path Finding Example.
+
+This example shows how A* can be used by an agent to find the best path
+between two cities (defined by `source_city_id` and `target_city_id`
+class attributes in `Romania` class).
+
+Author: Lucas David -- <ld492@drexel.edu>
+License: MIT (c) 2016
+
+"""
+
+import artificial as art
 
 
 class Graph:
@@ -10,7 +20,7 @@ class Graph:
         self.directed = directed
 
 
-class CityState(base.State):
+class CityState(art.base.State):
     @property
     def is_goal(self):
         return self.data == Romania.target_city_id
@@ -20,10 +30,10 @@ class CityState(base.State):
 
     def __str__(self):
         return '%s, g: %d, h: %d' % (
-        Romania.g.nodes[self.data], self.g, self.h())
+            Romania.g.nodes[self.data], self.g, self.h())
 
 
-class Romania(base.Environment):
+class Romania(art.base.Environment):
     g = Graph(
         nodes=['Arad', 'Oradea', 'Zerind', 'Timisoara', 'Lugoj', 'Mehadia',
                'Dorbeta', 'Sibiu', 'Fagaras', 'Rimnicu Vilcea', 'Craiova',
@@ -63,9 +73,8 @@ class Romania(base.Environment):
 
             current = self.current_state.data
 
-            if next_city is None or \
-                            current == next_city or \
-                            next_city not in Romania.g.edges[current]:
+            if (next_city is None or current == next_city or
+                        next_city not in Romania.g.edges[current]):
                 # Invalid transition or non-existent road.
                 continue
 
@@ -73,7 +82,7 @@ class Romania(base.Environment):
             self.real_cost += Romania.g.edges[current][next_city]
 
 
-class RoutePlanner(agents.UtilityBasedAgent):
+class RoutePlanner(art.agents.UtilityBasedAgent):
     def predict(self, state):
         current = state.data
         neighbors = [city for city in self.actions
@@ -85,15 +94,13 @@ class RoutePlanner(agents.UtilityBasedAgent):
 
 
 def main():
-    print('===========================')
-    print('Romania Path Finding Example')
-    print('===========================\n')
+    print(__doc__)
 
     env = Romania(initial_state=CityState(0))
 
     env.agents += [
         RoutePlanner(environment=env,
-                     search=searches.AStar,
+                     search=art.searches.fringe.AStar,
                      actions=list(range(20)),
                      verbose=True)
     ]

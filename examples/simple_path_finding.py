@@ -1,13 +1,21 @@
-from artificial import base, agents
-from artificial.searches import fringe as searches
+"""Simple Path Finding Example.
 
-class CityState(base.State):
+This example shows how the IterativeDeepening algorithm can be used by an
+agent to find the best path between two cities in a simple graph.
+
+Author: Lucas David -- <ld492@drexel.edu>
+License: MIT (c) 2016
+
+"""
+
+import artificial as art
+
+
+class CityState(art.base.State):
     """City State.
 
-    CityState doesn't need to override State's __eq__ and __hash__ methods,
-    as two city states are the same if they've achieved the same city and,
-    hence, have the same `data` attribute, which is precisely what
-    State.__eq__ checks for.
+    The definition of one state (a city) of this problem.
+
     """
 
     @property
@@ -17,8 +25,17 @@ class CityState(base.State):
     def __str__(self):
         return 'city: %d, g: %d' % (self.data, self.g)
 
+    def __eq__(self, other):
+        # A CityState is equal to another when they share the same city-code.
+        return isinstance(other, CityState) and self.data == other.data
 
-class SimplePathFinding(base.Environment):
+
+class SimplePathFinding(art.base.Environment):
+    """Simple Path Finding Environment.
+
+    The definition of our problem domain.
+
+    """
     real_cost = 0
     d = [
         [0, 6, 12, 25],
@@ -40,9 +57,8 @@ class SimplePathFinding(base.Environment):
 
             current = self.current_state.data
 
-            if next_city is None or \
-               current == next_city or \
-               not self.incidence[current][next_city]:
+            if (next_city is None or current == next_city or
+                    not self.incidence[current][next_city]):
                 # This agent doesn't know what to do.
                 continue
 
@@ -50,29 +66,48 @@ class SimplePathFinding(base.Environment):
             self.real_cost += self.d[current][next_city]
 
 
-class RoutePlanner(agents.UtilityBasedAgent):
-    def predict(self, state):
-        current = state.data
-        d, roads = self.environment.d, self.environment.incidence
-        neighbors = [city for city in self.actions
-                     if roads[current][city]]
+class RoutePlanner(art.agents.UtilityBasedAgent):
+    """RoutePlanner Agent.
 
-        return [CityState(data=neighbor, parent=state, action=neighbor,
-                          g=state.g + d[current][neighbor])
-                for neighbor in neighbors]
+    A planner that evaluates the incidence and distance graphs at
+    every iteration and decide to which city they should move on next
+    (this was defined in `GoalBasedAgent.act` method, which returns
+     an action -- or city -- to perform).
+
+    We are left with setting the specifics of our problem: to define
+    how the Agent predicts the transitions in the graph will be. Luckily,
+    our agent has all info it needs (that's a classic routing problem).
+
+    """
+
+    def predict(self, state):
+        """Predict possible cities that can be reached from `state`.
+
+        :param state: CityState instance, root consider for the prediction.
+        :return: list of CityState, referencing the cities that can be reached
+                 from `state`.
+        """
+        current_city = state.data
+
+        return [CityState(data=city,
+                          parent=state,
+                          action=city,
+                          g=state.g + self.environment.d[current_city][city])
+                # For every possible city...
+                for city in self.actions
+                # Only neighbors are considered (cities connected by a road)
+                if self.environment.incidence[current_city][city]]
 
 
 def main():
-    print('===========================')
-    print('Simple Path Finding Example')
-    print('===========================\n')
+    print(__doc__)
 
     env = SimplePathFinding(initial_state=CityState(0))
 
     env.agents += [
         RoutePlanner(environment=env,
                      # Uses Iterative-deepening search.
-                     search=searches.IterativeDeepening,
+                     search=art.searches.fringe.IterativeDeepening,
                      # Depths searched are 2 and 3.
                      search_params={'iterations': range(2, 4)},
                      # Can move to any city.
@@ -90,7 +125,6 @@ def main():
             i += 1
             print('#%i' % i)
             env.update()
-
             print('Current state: {%s}\n' % str(env.current_state))
 
         print('Solution found! (cost: %.1f) :-)' % env.real_cost

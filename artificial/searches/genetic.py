@@ -5,12 +5,16 @@
 
 import math
 import multiprocessing
-import queue
 import threading
 import time
 
 import numpy as np
 from scipy.spatial import distance
+
+try:
+    from queue import Queue
+except ImportError:
+    from Queue import Queue
 
 from . import base
 from .. import agents
@@ -196,10 +200,11 @@ class GeneticAlgorithm(base.Base):
         def __init__(self, worker_id, manager):
             # Use daemon option, as we want to
             # make the disposing process async.
-            super().__init__(daemon=True)
+            super(GeneticAlgorithm._Worker, self).__init__()
 
             self.id = worker_id
             self.manager = manager
+            self.daemon = True
 
         def run(self):
             while True:
@@ -241,7 +246,7 @@ class GeneticAlgorithm(base.Base):
                 # were added by ceiling the division above.
                 group_size -= collection_size % self.manager.n_jobs_
 
-            return group_size
+            return int(group_size)
 
         def generate_population(self):
             state_c = self.manager.agent.environment.state_class_
@@ -294,7 +299,7 @@ class GeneticAlgorithm(base.Base):
                  n_jobs=1,
                  debug=False,
                  random_state=None):
-        super().__init__(agent=agent)
+        super(GeneticAlgorithm, self).__init__(agent=agent)
 
         assert isinstance(agent, agents.UtilityBasedAgent), \
             'Local searches require an utility based agent.'
@@ -360,7 +365,8 @@ class GeneticAlgorithm(base.Base):
 
             if self.debug:
                 if self.max_evolution_cycles:
-                    progress = int(100 * self.cycle_ / self.max_evolution_cycles)
+                    progress = int(
+                        100 * self.cycle_ / self.max_evolution_cycles)
 
                     if self.cycle_ % (self.max_evolution_cycles // 10) == 0:
                         print('Cycle %i of %i (%i%%).'
@@ -443,7 +449,7 @@ class GeneticAlgorithm(base.Base):
             self.generations_variability_ = []
 
         self.workers = []
-        self.tasks = queue.Queue()
+        self.tasks = Queue()
 
         for i in range(self.n_jobs_):
             self.workers.append(self._Worker(worker_id=i, manager=self))

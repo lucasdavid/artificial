@@ -12,7 +12,7 @@ from . import base
 
 
 @six.add_metaclass(abc.ABCMeta)
-class PredictableAgent(base.Agent):
+class PredictingAgent(base.Agent):
     """Predictable Agent Base.
 
     Base for agents that can predict states based on their current perception

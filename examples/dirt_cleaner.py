@@ -1,17 +1,45 @@
-import time
+"""Dirt Cleaner Example.
+
+This example shows how A* can be used by an agent to find the best
+course of action to clean a room with multiple sectors.
+
+Author: Lucas David -- <ld492@drexel.edu>
+License: MIT (c) 2016
+
+"""
+
 import random
+import time
 
-from artificial import base, agents
-from artificial.searches import fringe as searches
+import artificial as art
 
 
-class DirtyState(base.State):
+class DirtyState(art.base.State):
+    """Dirty State.
+
+    Describes a state of the DirtyEnvironment. Data has always this format:
+        `(is_dirty, is_dirty, ..., agent_position_in_grid)`, where the i-th
+            `is_dirty` is a flag (0 or 1) indicating whether or not sector `i`
+            `is dirty.
+
+    """
+
     @property
     def is_goal(self):
+        """All sectors are 0 (cleaned)"""
         return sum(self.data[:-1]) == 0
 
     def h(self):
-        # We need, at least, 2 operations to clean each dirty sector.
+        """Heuristic function indicating the cost of cleaning a sector.
+
+        For each dirty sector, the agent will need to move to it and clean it.
+        This requires one operation for the sector in which the agent is
+        currently in (to-clean), and at least two operations for any other
+        sector (move, move, ..., clean).
+
+        Dirty sectors have the last position in their data set to 1.
+
+        """
         return 2 * sum(self.data[:-1]) - 1
 
     def __str__(self):
@@ -19,7 +47,7 @@ class DirtyState(base.State):
                 % (''.join(map(str, self.data)), self.action, self.g, self.h()))
 
 
-class DirtyEnvironment(base.Environment):
+class DirtyEnvironment(art.base.Environment):
     shape = (4, 4)
 
     def __init__(self, initial_state):
@@ -93,8 +121,28 @@ class DirtyEnvironment(base.Environment):
         return self.current_state.is_goal
 
 
-class DirtCleanerUtilityAgent(agents.UtilityBasedAgent):
+class DirtCleanerUtilityAgent(art.agents.UtilityBasedAgent):
     def predict(self, state):
+        """Predict how actions affect a given `state`. That is, which new
+        states could be reached from `state`.
+
+        :param state: the root state from which new
+                      states should be predicted.
+        :return: a list of reachable states from the current one.
+
+        Notes
+        -----
+
+        Now, you might read this method's code and think: "that looks" awfully
+        like the code in `DirtyEnvironment.update`. So, what's the difference?
+        `DirtyEnvironment` is a wrapper for the real world. The code in its
+        `update` method is a simulation on what would really happen to the
+        world given those actions were taken.
+
+        The code in this method ESTIMATES what would succeed from the taken
+        of a specific action.
+
+        """
         rows, columns = self.environment.shape
         children = []
 
@@ -148,18 +196,15 @@ class DirtCleanerUtilityAgent(agents.UtilityBasedAgent):
 
 
 def main():
-    iteration = 0
-    max_iterations = 100
+    print(__doc__)
 
-    print('==========================')
-    print('Dirt cleaner agent example')
-    print('==========================\n')
+    iteration, max_iterations = 0, 100
 
     env = DirtyEnvironment(initial_state='random')
 
     env.agents += [
         DirtCleanerUtilityAgent(environment=env,
-                                search=searches.AStar,
+                                search=art.searches.fringe.AStar,
                                 actions=(0, 1, 2, 3, 4),
                                 verbose=True)]
 
@@ -178,10 +223,8 @@ def main():
         print('Solution found! (cost: %.1f) :-)' % env.real_cost
               if env.current_state.is_goal
               else 'Solution not found. :-(')
-
     except KeyboardInterrupt:
         pass
-
     finally:
         print('Time elapsed: %.2f s' % (time.time() - start))
 

@@ -1,7 +1,4 @@
-"""
-================================================
-Neural Networks Training with Genetic Algorithms
-================================================
+"""Neural Networks Training with Genetic Algorithms Example.
 
 This example consists on:
 
@@ -15,20 +12,19 @@ This example consists on:
 
 As you can see, there's a lot to do. Hold tight: this is going to take a while.
 
-"""
+Author: Lucas David -- <ld492@drexel.edu>
+License: MIT (c) 2016
 
-# Author: Lucas David -- <ld492@drexel.edu>
-# License: MIT (c) 2016
+"""
 
 from time import time
 
-import artificial as at
 import matplotlib.pyplot as plt
 import numpy as np
-from artificial import searches
-from artificial.utils import helpers
 from sklearn import decomposition, datasets, model_selection
 from sklearn.neural_network import MLPClassifier
+
+import artificial as art
 
 random_state = np.random.RandomState(0)
 
@@ -91,7 +87,7 @@ benchmarks = [
 ]
 
 
-class TrainingCandidate(at.base.GeneticState):
+class TrainingCandidate(art.base.GeneticState):
     @property
     def coefs_(self):
         return self.data.coefs_
@@ -185,7 +181,7 @@ class TrainingCandidate(at.base.GeneticState):
                                  .fit(World.X, World.y))
 
 
-class World(at.base.Environment):
+class World(art.base.Environment):
     state_class_ = TrainingCandidate
     executions = benchmarks.copy()
     params = None
@@ -237,7 +233,8 @@ class World(at.base.Environment):
         best_i, best_model, best_score = -1, None, -np.inf
 
         for i, search_params in enumerate(params['searches']):
-            trainer = NNTrainer(searches.genetic.GeneticAlgorithm, self,
+            trainer = NNTrainer(art.searches.genetic.GeneticAlgorithm,
+                                self,
                                 search_params=search_params)
 
             # Ask agent to find a trained net for us.
@@ -301,7 +298,7 @@ class World(at.base.Environment):
         return score
 
 
-class NNTrainer(at.agents.UtilityBasedAgent):
+class NNTrainer(art.agents.UtilityBasedAgent):
     def predict(self, state):
         """Predicts nothing."""
 
@@ -324,7 +321,7 @@ def main():
     # Build and update world relative to the data defined by the user. At each
     # iteration, the world will train and compare neural nets to a specific
     # data set.
-    helpers.live(World(), n_cycles=len(benchmarks))
+    World().live(n_cycles=len(benchmarks), verbose=True)
 
 
 if __name__ == '__main__':

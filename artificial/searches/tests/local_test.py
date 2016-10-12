@@ -1,3 +1,8 @@
+"""Artificial Local Searches Test"""
+
+# Author: Lucas David -- <ld492@drexel.edu>
+# License: MIT (c) 2016
+
 from unittest import TestCase
 
 import numpy as np
@@ -23,7 +28,7 @@ class _TState(base.State):
 
 class _TestEnvironment(base.Environment):
     state_class_ = _TState
-    
+
     def update(self):
         pass
 

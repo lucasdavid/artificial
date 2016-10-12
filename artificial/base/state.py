@@ -1,3 +1,8 @@
+"""Artificial States"""
+
+# Author: Lucas David -- <ld492@drexel.edu>
+# License: MIT (c) 2016
+
 import abc
 import copy as copy_lib
 
@@ -146,7 +151,6 @@ class State:
         raise NotImplementedError
 
 
-@six.add_metaclass(abc.ABCMeta)
 class GeneticState(State):
     """Genetic State.
 

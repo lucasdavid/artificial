@@ -21,7 +21,7 @@ class TableDrivenAgent(base.Agent):
         self.percepts = ''
 
     def perceive(self):
-        super().perceive()
+        super(TableDrivenAgent, self).perceive()
         self.percepts += str(hash(self.environment.current_state))
 
         return self

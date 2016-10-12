@@ -8,11 +8,11 @@ import warnings
 
 import six
 
-from . import predictable
+from . import predicting
 
 
 @six.add_metaclass(abc.ABCMeta)
-class ModelBasedAgent(predictable.PredictableAgent):
+class ModelBasedAgent(predicting.PredictingAgent):
     """ModelBasedAgent Base.
 
     Basic model-based agent for partially observable environments.
@@ -70,7 +70,7 @@ class ModelBasedAgent(predictable.PredictableAgent):
         return self
 
     def act(self):
-        action = super().act()
+        action = super(ModelBasedAgent, self).act()
         self.last_action = action
 
         return action

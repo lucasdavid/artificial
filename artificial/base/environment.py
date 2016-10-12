@@ -1,4 +1,4 @@
-"""Artificial Environments"""
+"""Artificial Environment"""
 
 # Author: Lucas David -- <ld492@drexel.edu>
 # License: MIT (c) 2016
@@ -24,9 +24,13 @@ class Environment:
 
     Attributes
     ----------
+    state_class_ : State subclass
+        A link to the current's domain State specification, for reference
+        purposes. Useful for domain-specific methods that create random
+        instances of a state with `...state_class_.random()`.
+
     current_state : State-like object
-        Link to the current domain's State specification, for reference
-        purposes.
+        The model that represents the current state of the world.
 
     agents : list of Agent-like objects
         Contains a list of all agents currently inserted into the domain.
@@ -51,3 +55,37 @@ class Environment:
 
     def finished(self):
         return self.current_state and self.current_state.is_goal
+
+    def live(self, n_cycles=100, verbose=False):
+        """Make the environment alive!
+
+        Bring the Environment to life, and run it through `n_cycles` cycles.
+
+        Parameters
+        ----------
+        n_cycles: int, default=100
+            The number of cycles in which `env.update` will be called.
+
+        verbose: bool, default=True
+            Constant info regarding the current state of the environment is
+            is displayed to the user, if True.
+
+        """
+        self.build()
+
+        if verbose:
+            print('Initial state: %s' % str(self.current_state))
+
+        try:
+            cycle = 0
+
+            while cycle < n_cycles:
+                self.update()
+                cycle += 1
+
+        except KeyboardInterrupt:
+            if verbose:
+                print('canceled by user.')
+        finally:
+            if verbose:
+                print('Final state: %s' % str(self.current_state))
