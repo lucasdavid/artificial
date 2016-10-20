@@ -16,7 +16,7 @@ Author: Lucas David -- <ld492@drexel.edu>
 License: MIT (c) 2016
 
 """
-
+import logging
 from time import time
 
 import matplotlib.pyplot as plt
@@ -25,6 +25,9 @@ from sklearn import decomposition, datasets, model_selection
 from sklearn.neural_network import MLPClassifier
 
 import artificial as art
+
+logger = logging.getLogger('artificial')
+logger.setLevel(logging.DEBUG)
 
 random_state = np.random.RandomState(0)
 
@@ -321,7 +324,7 @@ def main():
     # Build and update world relative to the data defined by the user. At each
     # iteration, the world will train and compare neural nets to a specific
     # data set.
-    World().live(n_cycles=len(benchmarks), verbose=True)
+    World().live(n_cycles=len(benchmarks))
 
 
 if __name__ == '__main__':

@@ -4,8 +4,11 @@
 # License: MIT (c) 2016
 
 import abc
+import logging
 
 import six
+
+logger = logging.getLogger('artificial')
 
 
 @six.add_metaclass(abc.ABCMeta)
@@ -56,7 +59,7 @@ class Environment:
     def finished(self):
         return self.current_state and self.current_state.is_goal
 
-    def live(self, n_cycles=100, verbose=False):
+    def live(self, n_cycles=100):
         """Make the environment alive!
 
         Bring the Environment to life, and run it through `n_cycles` cycles.
@@ -66,15 +69,10 @@ class Environment:
         n_cycles: int, default=100
             The number of cycles in which `env.update` will be called.
 
-        verbose: bool, default=True
-            Constant info regarding the current state of the environment is
-            is displayed to the user, if True.
-
         """
         self.build()
 
-        if verbose:
-            print('Initial state: %s' % str(self.current_state))
+        logger.info('initial state: %s', str(self.current_state))
 
         try:
             cycle = 0
@@ -84,8 +82,6 @@ class Environment:
                 cycle += 1
 
         except KeyboardInterrupt:
-            if verbose:
-                print('canceled by user.')
+            logger.info('canceled by user.')
         finally:
-            if verbose:
-                print('Final state: %s' % str(self.current_state))
+            logger.info('final state: %s', str(self.current_state))

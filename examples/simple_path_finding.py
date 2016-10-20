@@ -8,7 +8,12 @@ License: MIT (c) 2016
 
 """
 
+import logging
+
 import artificial as art
+
+logger = logging.getLogger('artificial')
+logger.setLevel(logging.DEBUG)
 
 
 class CityState(art.base.State):
@@ -111,9 +116,7 @@ def main():
                      # Depths searched are 2 and 3.
                      search_params={'iterations': range(2, 4)},
                      # Can move to any city.
-                     actions=list(enumerate(SimplePathFinding.g)),
-                     # Talks all the way.
-                     verbose=True)
+                     actions=list(enumerate(SimplePathFinding.g)))
     ]
 
     i, max_iterations = 0, 14

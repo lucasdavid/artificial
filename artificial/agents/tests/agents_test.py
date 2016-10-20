@@ -25,6 +25,15 @@ class _TEnv(base.Environment):
         pass
 
 
+class _GBA(agents.GoalBasedAgent):
+    def predict(self, state):
+        return [
+            _S(state.data - 1, action=0, parent=state),
+            _S(state.data + 1, action=1, parent=state),
+            _S(state.data, action=2, parent=state),
+        ]
+
+
 class TableDrivenAgentTest(TestCase):
     def setUp(self):
         self.env = _TEnv(_S(0))
@@ -39,8 +48,7 @@ class TableDrivenAgentTest(TestCase):
         }
 
         tda = agents.TableDrivenAgent(action_map, self.env,
-                                      action_map.values(),
-                                      verbose=True)
+                                      action_map.values())
 
         self.assertIsNotNone(tda)
 
@@ -54,8 +62,7 @@ class TableDrivenAgentTest(TestCase):
         }
 
         tda = agents.TableDrivenAgent(action_map, self.env,
-                                      action_map.values(),
-                                      verbose=True)
+                                      action_map.values())
 
         tda.perceive()
         self.assertEqual(tda.percepts, str(hash(_S(0))))
@@ -75,8 +82,7 @@ class TableDrivenAgentTest(TestCase):
         }
 
         tda = agents.TableDrivenAgent(action_map, self.env,
-                                      action_map.values(),
-                                      verbose=True)
+                                      action_map.values())
 
         tda.perceive()
         self.assertEqual(tda.percepts, str(hash(_S(0))))
@@ -94,11 +100,6 @@ class TableDrivenAgentTest(TestCase):
         action = tda.act()
         self.assertIsNone(action)
 
-        # State is not described on table and warning is not raised.
-        tda.verbose = False
-        action = tda.act()
-        self.assertIsNone(action)
-
 
 class SimpleReflexAgentTest(TestCase):
     def setUp(self):
@@ -108,8 +109,7 @@ class SimpleReflexAgentTest(TestCase):
         rules = {_S(0): 1, _S(1): 2, _S(2): 1}
 
         sra = agents.SimpleReflexAgent(rules, self.env,
-                                       rules.values(),
-                                       verbose=True)
+                                       rules.values())
 
         self.assertIsNotNone(sra)
 
@@ -117,8 +117,7 @@ class SimpleReflexAgentTest(TestCase):
         rules = {_S(0): 1, _S(1): 2, _S(2): 1}
 
         sra = agents.SimpleReflexAgent(rules, self.env,
-                                       rules.values(),
-                                       verbose=True)
+                                       rules.values())
 
         action = sra.perceive().act()
         self.assertEqual(action, 1)
@@ -127,9 +126,31 @@ class SimpleReflexAgentTest(TestCase):
         action = sra.perceive().act()
         self.assertIsNone(action)
 
-        sra.verbose = False
-        action = sra.perceive().act()
-        self.assertIsNone(action)
+
+class _RA(agents.ResponderAgent, _GBA):
+    pass
+
+
+class ResponderAgentTest(TestCase):
+    def setUp(self):
+        self.env = _TEnv(_S(0))
+
+    def test_sanity(self):
+        ra = _RA(search=fringe.BreadthFirst,
+                 environment=self.env)
+        self.assertIsNotNone(ra)
+
+    def test_act(self):
+        ra = _RA(search=fringe.BreadthFirst,
+                 environment=self.env)
+        answer = ra.perceive().act()
+        self.assertTrue(isinstance(answer, _S))
+        self.assertEqual(answer.data, 10)
+
+        self.env.current_state = _S(3)
+        answer = ra.perceive().act()
+        self.assertTrue(isinstance(answer, _S))
+        self.assertEqual(answer.data, 10)
 
 
 class ModelBasedAgentTest(TestCase):
@@ -153,8 +174,7 @@ class ModelBasedAgentTest(TestCase):
 
         rules = {_S(0): 1, _S(1): 2, _S(2): 1}
         sra = _TestModelBasedAgent(rules, self.env,
-                                   rules.values(),
-                                   verbose=True)
+                                   rules.values())
 
         action = sra.perceive().act()
         self.assertEqual(sra.last_state, _S(0))
@@ -186,8 +206,7 @@ class ModelBasedAgentTest(TestCase):
 
         rules = {_S(0): 1, _S(1): 2, _S(2): 1}
         sra = _TestModelBasedAgent(rules, self.env,
-                                   rules.values(),
-                                   verbose=True)
+                                   rules.values())
         sra.perceive().act()
 
         # Suddenly, the environment becomes undefined!
@@ -201,44 +220,34 @@ class ModelBasedAgentTest(TestCase):
             self.assertTrue(issubclass(w[-1].category, UserWarning))
 
 
-class _TestGoalBasedAgent(agents.GoalBasedAgent):
-    def predict(self, state):
-        return [
-            _S(state.data - 1, action=0, parent=state),
-            _S(state.data + 1, action=1, parent=state),
-            _S(state.data, action=2, parent=state),
-        ]
-
-
 class GoalBasedAgentTest(TestCase):
     def setUp(self):
         self.env = _TEnv(_S(0))
 
     def test_sanity(self):
-        gba = _TestGoalBasedAgent(fringe.BreadthFirst,
-                                  environment=self.env,
-                                  actions=[0, 1, 2])
+        gba = _GBA(fringe.BreadthFirst,
+                   environment=self.env,
+                   actions=[0, 1, 2])
         self.assertIsNotNone(gba)
 
     def test_act(self):
-        gba = _TestGoalBasedAgent(fringe.BreadthFirst,
-                                  environment=self.env,
-                                  actions=[0, 1, 2])
+        gba = _GBA(fringe.BreadthFirst,
+                   environment=self.env,
+                   actions=[0, 1, 2])
         for _ in range(10):
             self.assertEqual(gba.perceive().act(), 1)
 
         # Test verbosity.
-        gba = _TestGoalBasedAgent(fringe.BreadthFirst,
-                                  verbose=True,
-                                  environment=self.env,
-                                  actions=[0, 1, 2])
+        gba = _GBA(fringe.BreadthFirst,
+                   environment=self.env,
+                   actions=[0, 1, 2])
         for _ in range(10):
             self.assertEqual(gba.perceive().act(), 1)
 
     def test_is_agent_goal(self):
-        gba = _TestGoalBasedAgent(fringe.BreadthFirst,
-                                  environment=self.env,
-                                  actions=[0, 1, 2])
+        gba = _GBA(fringe.BreadthFirst,
+                   environment=self.env,
+                   actions=[0, 1, 2])
 
         self.assertFalse(gba.is_goal(_S(0)))
         self.assertTrue(gba.is_goal(_S(10)))

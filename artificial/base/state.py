@@ -157,7 +157,7 @@ class GeneticState(State):
     State abstraction for searches using `GeneticAlgorithm` class.
 
     """
-    @abc.abstractmethod
+
     def cross(self, other):
         """The cross operator that produces new individuals from two
         existing ones.
@@ -170,8 +170,8 @@ class GeneticState(State):
         -------
         GeneticState-like object. The offspring.
         """
+        raise NotImplementedError
 
-    @abc.abstractmethod
     def mutate(self, factor, probability):
         """The mutation operator that changes the current individual.
 
@@ -185,3 +185,4 @@ class GeneticState(State):
         Always return self!
 
         """
+        raise NotImplementedError

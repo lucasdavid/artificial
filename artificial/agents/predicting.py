@@ -12,14 +12,13 @@ from . import base
 
 
 @six.add_metaclass(abc.ABCMeta)
-class PredictingAgent(base.Agent):
+class PredictingAgent(base.AgentBase):
     """Predictable Agent Base.
 
     Base for agents that can predict states based on their current perception
     of the environment.
     """
 
-    @abc.abstractmethod
     def predict(self, state):
         """Predicts states based on the current perceived one and the
         agent's possible actions.
@@ -29,3 +28,4 @@ class PredictingAgent(base.Agent):
         State-like list.
 
         """
+        raise NotImplementedError

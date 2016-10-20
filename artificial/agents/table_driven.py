@@ -7,16 +7,15 @@ import warnings
 from . import base
 
 
-class TableDrivenAgent(base.Agent):
+class TableDrivenAgent(base.AgentBase):
     """Table Driven Agent.
 
     Basic intelligent agent based table of percepts.
     """
 
-    def __init__(self, action_map, environment, actions=None, verbose=False):
-        super(TableDrivenAgent, self).__init__(
-            environment=environment, actions=actions, verbose=verbose)
-
+    def __init__(self, action_map, environment, actions=None):
+        super(TableDrivenAgent, self).__init__(environment=environment,
+                                               actions=actions)
         self.action_map = action_map
         self.percepts = ''
 

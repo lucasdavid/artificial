@@ -14,7 +14,7 @@ from . import base
 
 
 @six.add_metaclass(abc.ABCMeta)
-class Adversarial(base.Base):
+class Adversarial(base.SearchBase):
     """Adversarial Search.
 
     Parameters

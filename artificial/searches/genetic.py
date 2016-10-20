@@ -2,7 +2,7 @@
 
 # Author: Lucas David -- <ld492@drexel.edu>
 # License: MIT (c) 2016
-
+import logging
 import math
 import multiprocessing
 import threading
@@ -16,11 +16,14 @@ try:
 except ImportError:
     from Queue import Queue
 
-from . import base
-from .. import agents
+from .base import SearchBase
+from ..agents import UtilityBasedAgent
+from ..base import GeneticState
+
+logger = logging.getLogger('artificial')
 
 
-class GeneticAlgorithm(base.Base):
+class GeneticAlgorithm(SearchBase):
     """Genetic Algorithm Search.
 
     Parameters
@@ -271,10 +274,14 @@ class GeneticAlgorithm(base.Base):
             try:
                 while True:
                     a, b = next(selected), next(selected)
-                    c = a.cross(b).mutate(self.manager.mutation_factor,
-                                          self.manager.mutation_probability)
+                    cs = a.cross(b)
 
-                    group.append(c)
+                    if isinstance(cs, GeneticState):
+                        cs = [cs]
+
+                    group += [c.mutate(self.manager.mutation_factor,
+                                       self.manager.mutation_probability)
+                              for c in cs]
 
             except StopIteration:
                 # We're finished!
@@ -301,8 +308,8 @@ class GeneticAlgorithm(base.Base):
                  random_state=None):
         super(GeneticAlgorithm, self).__init__(agent=agent)
 
-        assert isinstance(agent, agents.UtilityBasedAgent), \
-            'Local searches require an utility based agent.'
+        assert isinstance(agent, UtilityBasedAgent), \
+            'Genetic searches require an utility based agent.'
 
         self.population_size = population_size
         self.max_evolution_cycles = max_evolution_cycles
@@ -324,17 +331,14 @@ class GeneticAlgorithm(base.Base):
         self.lock = threading.Lock()
 
         # Properties.
-        self.population_size_ = self.population_ = self.tournament_size_ = None
-        self.selected_ = self.n_selected_ = self.offspring_ = None
-        self.started_at_ = self.n_jobs_ = None
+        self.population_size_ = self.population_ = self.tournament_size_ = \
+            self.selected_ = self.n_selected_ = self.offspring_ = \
+            self.started_at_ = self.n_jobs_ = None
 
         # Statistics.
-        self.generations_variability_ = None
-        self.average_utility_ = None
-        self.highest_utility_ = None
-        self.lowest_utility_ = None
-        self.variability_ = 0
-        self.cycle_ = 0
+        self.generations_variability_ = self.average_utility_ = \
+            self.highest_utility_ = self.lowest_utility_ = None
+        self.variability_ = self.cycle_ = 0
 
     def search(self):
         """Evolve generations while the `continue_evolving` condition is
@@ -363,15 +367,13 @@ class GeneticAlgorithm(base.Base):
         while self.continue_evolving():
             self.cycle_ += 1
 
-            if self.debug:
-                if self.max_evolution_cycles:
-                    progress = int(
-                        100 * self.cycle_ / self.max_evolution_cycles)
+            if self.max_evolution_cycles:
+                progress = 100 * self.cycle_ // self.max_evolution_cycles
 
-                    if self.cycle_ % (self.max_evolution_cycles // 10) == 0:
-                        print('Cycle %i of %i (%i%%).'
-                              % (self.cycle_, self.max_evolution_cycles,
-                                 progress))
+                if self.cycle_ % (self.max_evolution_cycles // 10) == 0:
+                    logger.info('cycle %i of %i (%i%%)',
+                                self.cycle_, self.max_evolution_cycles,
+                                progress)
             self.evolve()
         self.search_dispose()
         return self
@@ -508,7 +510,6 @@ class GeneticAlgorithm(base.Base):
         # Find who is the fittest.
         self.solution_candidate_ = max(self.population_,
                                        key=lambda i: self.agent.utility(i))
-
         return self
 
     def evolve(self):
@@ -561,10 +562,9 @@ class GeneticAlgorithm(base.Base):
             # will vanish and the probabilities will sum to 1.
             p = np.array([self.agent.utility(i)
                           for i in self.population_]).astype(float)
-            minimum = np.min(p)
-            if minimum < 0:
-                p -= minimum
-            p /= np.sum(p)
+
+            # soft-max p, turning it into probabilities.
+            p = np.exp(p) / np.exp(p).sum()
 
             self.selected_ = random.choice(self.population_,
                                            size=self.n_selected_, p=p)

@@ -11,14 +11,14 @@ from artificial import agents
 
 
 @six.add_metaclass(abc.ABCMeta)
-class Base:
-    """Base Search.
+class SearchBase:
+    """Search Base Template.
 
-    Common interface for searches, including agent, space and root properties.
+    Defines the basic contract shared between search algorithms,
+    including agent, space and root properties.
 
     Parameters
     ----------
-
     agent : Agent-like
             Agent that requested search. This is needed as only an agent
             of the specific domain problem can predict outcomes based on
@@ -30,7 +30,6 @@ class Base:
 
     Attributes
     ----------
-
     space_ : set
             A set used to contain states and efficient repetition checking.
 

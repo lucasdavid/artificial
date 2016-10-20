@@ -11,7 +11,7 @@ from . import base
 
 
 @six.add_metaclass(abc.ABCMeta)
-class LearningAgent(base.Agent):
+class LearningAgent(base.AgentBase):
     """Agent Base.
 
     Arguments
@@ -26,18 +26,11 @@ class LearningAgent(base.Agent):
     model : machine-learning-estimator-like (optional)
         A model used by the agent to take actions.
 
-    verbose : bool (default=False)
-        The mode in which the agent operates.
-        If True, errors or warnings are always sent to the output buffer.
-
     """
 
-    def __init__(self, environment, actions=None, model=None,
-
-                 verbose=False):
-        super(LearningAgent, self).__init__(
-            environment=environment, actions=actions, verbose=verbose)
-
+    def __init__(self, environment, actions=None, model=None):
+        super(LearningAgent, self).__init__(environment=environment,
+                                            actions=actions)
         self.model = model
 
     def act(self):

@@ -4,10 +4,13 @@
 # License: MIT (c) 2016
 
 import abc
+import logging
 
 import six
 
 from . import predicting
+
+logger = logging.getLogger('artificial')
 
 
 @six.add_metaclass(abc.ABCMeta)
@@ -28,18 +31,17 @@ class GoalBasedAgent(predicting.PredictingAgent):
     it completely. When it is finally done, a new search is made and a
     new action sequence will be performed.
 
-
     Parameters
     ----------
+    search : a Search's subclass that will be instantiated
+             on the agent's self initialization.
 
-        search : a Search's subclass that will be instantiated
-                 on the agent's self initialization.
     """
 
     def __init__(self, search, environment, actions=None,
-                 search_params=None, verbose=False):
+                 search_params=None):
         super(GoalBasedAgent, self).__init__(
-            environment=environment, actions=actions, verbose=verbose)
+            environment=environment, actions=actions)
 
         self.search = search(agent=self, **(search_params or {}))
         self.actions_to_perform = []
@@ -51,10 +53,8 @@ class GoalBasedAgent(predicting.PredictingAgent):
                                        .search()
                                        .backtrack()
                                        .solution_path_as_action_list())
-
-            if self.verbose:
-                print('Agent has set action path: %s'
-                      % str(self.actions_to_perform))
+            logger.info('agent has set action path: %s',
+                        str(self.actions_to_perform))
 
         return (self.actions_to_perform.pop(0)
                 if self.actions_to_perform

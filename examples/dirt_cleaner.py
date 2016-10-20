@@ -205,8 +205,7 @@ def main():
     env.agents += [
         DirtCleanerUtilityAgent(environment=env,
                                 search=art.searches.fringe.AStar,
-                                actions=(0, 1, 2, 3, 4),
-                                verbose=True)]
+                                actions=(0, 1, 2, 3, 4))]
 
     print('Initial state: {%s}\n' % str(env.current_state))
 

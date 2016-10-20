@@ -7,10 +7,14 @@ import abc
 
 import six
 
+from ..base import Environment
+
 
 @six.add_metaclass(abc.ABCMeta)
-class Agent:
-    """Agent Base.
+class AgentBase:
+    """Agent Base Template.
+
+    Defines a basic contract shared between all agents.
 
     Arguments
     ---------
@@ -21,20 +25,20 @@ class Agent:
         Which actions an agent has. This is used as a reminder for
         `predict` implementations and it's optional,
 
-    verbose : bool (default=False)
-        The mode in which the agent operates.
-        If True, errors or warnings are always sent to the output buffer.
-
     """
 
-    def __init__(self, environment, actions=None, verbose=False):
+    def __init__(self, environment, actions=None):
+        if not isinstance(environment, Environment):
+            raise ValueError('Illegal type (%s) for environment. It should '
+                             'be an object of an Environment\'s subclass',
+                             type(environment))
         self.environment = environment
         self.actions = actions
-        self.verbose = verbose
         self.last_state = None
         self.last_known_state = None
 
     def perceive(self):
+        """Perceive the environment and save current state."""
         self.last_state = self.environment.current_state
 
         if self.last_state:
@@ -42,5 +46,9 @@ class Agent:
 
         return self
 
-    @abc.abstractmethod
-    def act(self): pass
+    def act(self):
+        """Decides which action should be performed over the world,
+        and return its code.
+
+        """
+        raise NotImplementedError

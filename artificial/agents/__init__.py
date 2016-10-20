@@ -3,11 +3,17 @@
 # Author: Lucas David -- <ld492@drexel.edu>
 # License: MIT (c) 2016
 
-from .base import Agent
-from .table_driven import TableDrivenAgent
-from .simple_reflex import SimpleReflexAgent
+
+from .base import AgentBase
 from .goal_based import GoalBasedAgent
-from .predicting import PredictingAgent
-from .model_based import ModelBasedAgent
-from .utility import UtilityBasedAgent
 from .learning import LearningAgent
+from .model_based import ModelBasedAgent
+from .predicting import PredictingAgent
+from .responder import ResponderAgent
+from .simple_reflex import SimpleReflexAgent
+from .table_driven import TableDrivenAgent
+from .utility import UtilityBasedAgent
+
+__all__ = ('AgentBase', 'GoalBasedAgent', 'LearningAgent', 'ModelBasedAgent',
+           'PredictingAgent', 'ResponderAgent', 'SimpleReflexAgent',
+           'TableDrivenAgent', 'UtilityBasedAgent')

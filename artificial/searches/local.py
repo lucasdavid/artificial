@@ -14,7 +14,7 @@ from .. import agents
 
 
 @six.add_metaclass(abc.ABCMeta)
-class Local(base.Base):
+class Local(base.SearchBase):
     """Base Local Search.
 
     Base class for HillClimbing and LocalBeam searches.

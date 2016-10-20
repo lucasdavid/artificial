@@ -9,7 +9,12 @@ License: MIT (c) 2016
 
 """
 
+import logging
+
 import artificial as art
+
+logger = logging.getLogger('artificial')
+logger.setLevel(logging.DEBUG)
 
 
 class Graph:
@@ -74,7 +79,7 @@ class Romania(art.base.Environment):
             current = self.current_state.data
 
             if (next_city is None or current == next_city or
-                        next_city not in Romania.g.edges[current]):
+                next_city not in Romania.g.edges[current]):
                 # Invalid transition or non-existent road.
                 continue
 
@@ -101,8 +106,7 @@ def main():
     env.agents += [
         RoutePlanner(environment=env,
                      search=art.searches.fringe.AStar,
-                     actions=list(range(20)),
-                     verbose=True)
+                     actions=list(range(20)))
     ]
 
     i, max_iterations = 0, 14

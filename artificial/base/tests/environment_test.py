@@ -62,7 +62,7 @@ class EnvironmentTest(TestCase):
         env.build.assert_any_call()
         env.update.assert_any_call()
 
-        env.live(n_cycles=expected_cycles, verbose=True)
+        env.live(n_cycles=expected_cycles)
         env.build.assert_any_call()
         env.update.assert_any_call()
 
@@ -72,6 +72,6 @@ class EnvironmentTest(TestCase):
         env.build.assert_any_call()
         env.update.assert_any_call()
 
-        env.live(n_cycles=expected_cycles, verbose=True)
+        env.live(n_cycles=expected_cycles)
         env.build.assert_any_call()
         env.update.assert_any_call()

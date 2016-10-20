@@ -13,7 +13,7 @@ from ..utils import PriorityQueue
 
 
 @six.add_metaclass(abc.ABCMeta)
-class FringeBase(base.Base):
+class FringeBase(base.SearchBase):
     """Fringe Base Search.
 
     Base class for searchers that rely on the concept of fringe.
@@ -258,7 +258,7 @@ class DepthFirst(FringeBase):
         self.fringe_ = children + self.fringe_
 
 
-class IterativeDeepening(base.Base):
+class IterativeDeepening(base.SearchBase):
     """Iterative Deepening Search.
 
     Taking an iterative, executes `DepthLimited` passing the iteration's
