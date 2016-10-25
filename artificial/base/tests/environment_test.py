@@ -49,7 +49,7 @@ class EnvironmentTest(TestCase):
         s.data = 1
         self.assertFalse(env.finished())
 
-        s.data = 2
+        env.current_state = _S(2)
         self.assertTrue(env.finished())
 
     def test_live(self):

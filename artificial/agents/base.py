@@ -28,9 +28,9 @@ class AgentBase:
     """
 
     def __init__(self, environment, actions=None):
-        if not isinstance(environment, Environment):
+        if environment is not None and not isinstance(environment, Environment):
             raise ValueError('Illegal type (%s) for environment. It should '
-                             'be an object of an Environment\'s subclass',
+                             'be an object of an Environment\'s subclass' %
                              type(environment))
         self.environment = environment
         self.actions = actions

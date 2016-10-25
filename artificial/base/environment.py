@@ -40,14 +40,28 @@ class Environment:
 
     """
 
+    __instance = None
     state_class_ = None
 
     def __init__(self, initial_state=None):
         self.current_state = self.initial_state = initial_state
         self.agents = []
+        Environment.__instance = self
 
     def build(self):
         """Build the environment, if necessary"""
+        return self
+
+    def dispose(self):
+        self.current_state = None
+        self.agents = []
+
+        Environment.__instance = None
+
+        return self
+
+    def __del__(self):
+        self.dispose()
 
     @abc.abstractmethod
     def update(self):

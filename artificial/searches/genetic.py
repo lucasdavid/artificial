@@ -367,10 +367,10 @@ class GeneticAlgorithm(SearchBase):
         while self.continue_evolving():
             self.cycle_ += 1
 
-            if self.max_evolution_cycles:
+            if self.max_evolution_cycles < np.inf:
                 progress = 100 * self.cycle_ // self.max_evolution_cycles
 
-                if self.cycle_ % (self.max_evolution_cycles // 10) == 0:
+                if progress % 10 == 0:
                     logger.info('cycle %i of %i (%i%%)',
                                 self.cycle_, self.max_evolution_cycles,
                                 progress)
@@ -557,14 +557,11 @@ class GeneticAlgorithm(SearchBase):
                               for _ in range(self.n_selected_)]
 
         elif self.breeding_selection == 'roulette':
-            # If there are negative values, perform windowing by adding the
-            # minimum value to all individuals' fitness. Any negative utilities
-            # will vanish and the probabilities will sum to 1.
+            # Roulette requires probabilities. Soft-max p!
             p = np.array([self.agent.utility(i)
-                          for i in self.population_]).astype(float)
-
-            # soft-max p, turning it into probabilities.
-            p = np.exp(p) / np.exp(p).sum()
+                          for i in self.population_], dtype=float)
+            p = np.exp(p)
+            p /= p.sum()
 
             self.selected_ = random.choice(self.population_,
                                            size=self.n_selected_, p=p)

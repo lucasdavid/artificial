@@ -1,12 +1,4 @@
-try:
-    from setuptools import setup
-except ImportError:
-    from distutils.core import setup
-
-try:
-    from setuptools import find_packages
-except ImportError:
-    from distutils import find_packages
+from setuptools import setup, find_packages
 
 setup(
     name='artificial',
