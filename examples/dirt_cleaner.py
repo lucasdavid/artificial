@@ -42,15 +42,11 @@ class DirtyState(art.base.State):
         """
         return 2 * sum(self.data[:-1]) - 1
 
-    def __str__(self):
-        return ('%s, action: %s, g: %.2f, h: %.2f'
-                % (''.join(map(str, self.data)), self.action, self.g, self.h()))
-
 
 class DirtyEnvironment(art.base.Environment):
     shape = (4, 4)
 
-    def __init__(self, initial_state):
+    def __init__(self, initial_state='random'):
         if initial_state == 'random':
             initial_state = DirtyState([round(min(random.random() + .3, 1))
                                         for _ in range(self.shape[0] *
@@ -96,7 +92,7 @@ class DirtyEnvironment(art.base.Environment):
 
             pos = self.current_state.data[-1]
             grid_pos = (pos // columns, pos % columns)
-            s = self.current_state.mitosis(parenting=False)
+            s = self.current_state.mitosis(parenting=False, action=action_id)
 
             if grid_pos[1] > 0 and action_id == 0:
                 s.data[-1] -= 1
@@ -116,9 +112,6 @@ class DirtyEnvironment(art.base.Environment):
             if s != self.current_state:
                 self.current_state = s
                 self.real_cost += action['cost']
-
-    def finished(self):
-        return self.current_state.is_goal
 
 
 class DirtCleanerUtilityAgent(art.agents.UtilityBasedAgent):
@@ -198,7 +191,7 @@ class DirtCleanerUtilityAgent(art.agents.UtilityBasedAgent):
 def main():
     print(__doc__)
 
-    iteration, max_iterations = 0, 100
+    i, max_iterations = 0, 100
 
     env = DirtyEnvironment(initial_state='random')
 
@@ -212,14 +205,13 @@ def main():
     start = time.time()
 
     try:
-        while iteration < max_iterations and not env.finished():
-            iteration += 1
-            print('#%i' % iteration)
+        while i < max_iterations and not env.finished():
             env.update()
 
-            print('Current state: {%s}\n' % str(env.current_state))
+            print('#%i: {%s}' % (i, str(env.current_state)))
+            i += 1
 
-        print('Solution found! (cost: %.1f) :-)' % env.real_cost
+        print('\nSolution found! :-)'
               if env.current_state.is_goal
               else 'Solution not found. :-(')
     except KeyboardInterrupt:

@@ -68,8 +68,12 @@ class Romania(art.base.Environment):
         })
 
     source_city_id = 0
-    target_city_id = 11
+    target_city_id = 19
     real_cost = 0
+
+    def build(self):
+        self.real_cost = 0
+        return self
 
     def update(self):
         for agent in self.agents:
@@ -79,12 +83,12 @@ class Romania(art.base.Environment):
             current = self.current_state.data
 
             if (next_city is None or current == next_city or
-                next_city not in Romania.g.edges[current]):
+                        next_city not in Romania.g.edges[current]):
                 # Invalid transition or non-existent road.
                 continue
 
-            self.current_state = CityState(next_city)
             self.real_cost += Romania.g.edges[current][next_city]
+            self.current_state = CityState(next_city, g=self.real_cost)
 
 
 class RoutePlanner(art.agents.UtilityBasedAgent):
@@ -104,28 +108,30 @@ def main():
     env = Romania(initial_state=CityState(0))
 
     env.agents += [
-        RoutePlanner(environment=env,
-                     search=art.searches.fringe.AStar,
-                     actions=list(range(20)))
+        RoutePlanner(
+            environment=env,
+            # A* Search.
+            search=art.searches.fringe.AStar,
+            # Signal that the agent can travel to ANY city
+            # (see `RoutePlanner.predict` method)
+            actions=list(range(20)))
     ]
 
     i, max_iterations = 0, 14
 
     print('Initial state: {%s}\n' % str(env.current_state))
 
-    try:
-        while i < max_iterations and not env.finished():
-            i += 1
-            env.update()
+    env.build()
 
-            print('#%i: {%s}' % (i, str(env.current_state)))
+    while i < max_iterations and not env.finished():
+        env.update()
 
-        print('Solution found! (cost: %.1f) :-)' % env.real_cost
-              if env.current_state.is_goal
-              else 'Solution not found. :-(')
+        print('#%i: {%s}' % (i, str(env.current_state)))
+        i += 1
 
-    except KeyboardInterrupt:
-        pass
+    print('\nSolution found! :-)'
+          if env.current_state.is_goal
+          else 'Solution not found. :-(')
 
 
 if __name__ == '__main__':

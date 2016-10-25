@@ -91,9 +91,11 @@ class Environment:
         try:
             cycle = 0
 
-            while cycle < n_cycles:
+            while cycle < n_cycles and not self.finished():
                 self.update()
                 cycle += 1
+
+                logger.info('#%i: {%s}' % (cycle, str(self.current_state)))
 
         except KeyboardInterrupt:
             logger.info('canceled by user.')

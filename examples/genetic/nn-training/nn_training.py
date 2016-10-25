@@ -19,15 +19,14 @@ License: MIT (c) 2016
 import logging
 from time import time
 
+import artificial as art
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn import decomposition, datasets, model_selection
 from sklearn.neural_network import MLPClassifier
 
-import artificial as art
-
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger('artificial')
-logger.setLevel(logging.DEBUG)
 
 random_state = np.random.RandomState(0)
 
@@ -66,27 +65,20 @@ def plot_decision_boundary(X, y, model, file_name=''):
 
 benchmarks = [
     # Training on Digits.
-    dict(
-        name='digits',
-        dataset=lambda: datasets.load_digits(),
-        nn_params=dict(
-            hidden_layer_sizes=(100,), random_state=np.random.RandomState(76),
-            max_iter=1,
-        ),
-        searches=[
-            dict(
-                population_size=1000, debug=True,
-                max_evolution_cycles=10000, max_evolution_duration=10 * 60,
-                mutation_factor=.1, mutation_probability=.1,
-                random_state=np.random.RandomState(82)
-            )
+    {
+        'name': 'digits',
+        'dataset': lambda: datasets.load_digits(),
+        'nn_params': {
+            'hidden_layer_sizes': (100,),
+            'random_state': np.random.RandomState(76), 'max_iter': 1},
+        'searches': [
+            {'population_size': 1000, 'debug': True,
+             'max_evolution_cycles': 10000, 'max_evolution_duration': 10 * 60,
+             'mutation_factor': .1, 'mutation_probability': .1,
+             'random_state': np.random.RandomState(82)}
         ],
-        settings=dict(
-            pc_decomposing=True,
-            whiten=False,
-            plotting=False,
-        )
-    ),
+        'settings': {'pc_decomposing': True, 'whiten': False,
+                     'plotting': False}},
 ]
 
 
@@ -301,21 +293,8 @@ class World(art.base.Environment):
         return score
 
 
-class NNTrainer(art.agents.UtilityBasedAgent):
-    def predict(self, state):
-        """Predicts nothing."""
-
-    def act(self):
-        """Find a training candidate for a Neural Network.
-
-        We have only one action, which is to answer a question:
-        What is a neural network that best predicts my data set classes?
-
-        """
-        return (self.search
-                .restart(root=self.last_state)
-                .search()
-                .solution_candidate_)
+class NNTrainer(art.agents.ResponderAgent, art.agents.UtilityBasedAgent):
+    """Trainer Agent"""
 
 
 def main():

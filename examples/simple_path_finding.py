@@ -11,9 +11,10 @@ License: MIT (c) 2016
 import logging
 
 import artificial as art
+import time
 
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger('artificial')
-logger.setLevel(logging.DEBUG)
 
 
 class CityState(art.base.State):
@@ -29,10 +30,6 @@ class CityState(art.base.State):
 
     def __str__(self):
         return 'city: %d, g: %d' % (self.data, self.g)
-
-    def __eq__(self, other):
-        # A CityState is equal to another when they share the same city-code.
-        return isinstance(other, CityState) and self.data == other.data
 
 
 class SimplePathFinding(art.base.Environment):
@@ -55,6 +52,10 @@ class SimplePathFinding(art.base.Environment):
         [1, 1, 1, 0],
     ]
 
+    def build(self):
+        self.real_cost = 0
+        return self
+
     def update(self):
         for agent in self.agents:
             agent.perceive()
@@ -67,8 +68,10 @@ class SimplePathFinding(art.base.Environment):
                 # This agent doesn't know what to do.
                 continue
 
-            self.current_state = CityState(next_city)
+            # Compute the total cost of the path.
             self.real_cost += self.d[current][next_city]
+            # Transit to next city.
+            self.current_state = CityState(next_city, g=self.real_cost)
 
 
 class RoutePlanner(art.agents.UtilityBasedAgent):
@@ -105,7 +108,10 @@ class RoutePlanner(art.agents.UtilityBasedAgent):
 
 
 def main():
-    print(__doc__)
+    print(__doc__, flush=True)
+    # It's pretty awkward print's flush and the logger's are not synchronized.
+    # Use a sleep to make sure it's done.
+    time.sleep(.01)
 
     env = SimplePathFinding(initial_state=CityState(0))
 
@@ -116,26 +122,18 @@ def main():
                      # Depths searched are 2 and 3.
                      search_params={'iterations': range(2, 4)},
                      # Can move to any city.
-                     actions=list(enumerate(SimplePathFinding.g)))
+                     actions=list(range(len(SimplePathFinding.incidence))))
     ]
 
-    i, max_iterations = 0, 14
-
-    print('Initial state: {%s}\n' % str(env.current_state))
-
     try:
-        while i < max_iterations and not env.finished():
-            i += 1
-            print('#%i' % i)
-            env.update()
-            print('Current state: {%s}\n' % str(env.current_state))
+        env.live(n_cycles=5)
 
-        print('Solution found! (cost: %.1f) :-)' % env.real_cost
-              if env.current_state.is_goal
-              else 'Solution not found. :-(')
+        logger.info('\nSolution found! :-)'
+                    if env.current_state.is_goal
+                    else '\nSolution not found. :-(')
 
     except KeyboardInterrupt:
-        pass
+        logger.info('canceled')
 
 
 if __name__ == '__main__':

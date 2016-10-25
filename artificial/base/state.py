@@ -130,6 +130,9 @@ class State:
             return hash(str(self.data))
 
     def __str__(self):
+        if self.action is None:
+            return ('data: %s, g: %d' % (str(self.data), self.g))
+
         return ('data: %s, action: %s, g: %d'
                 % (str(self.data), self.action, self.g))
 
