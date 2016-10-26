@@ -36,8 +36,7 @@ class UtilityBasedAgent(goal_based.GoalBasedAgent):
         to to increase performance.
 
         """
-        state.computed_utility_ = (state.computed_utility_
-                                   if state.computed_utility_ is not None
-                                   else -state.f())
-
+        state.computed_utility_ = (-state.f()
+                                   if state.computed_utility_ is None
+                                   else state.computed_utility_)
         return state.computed_utility_
