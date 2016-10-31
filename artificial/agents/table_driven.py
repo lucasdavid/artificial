@@ -13,9 +13,11 @@ class TableDrivenAgent(base.AgentBase):
     Basic intelligent agent based table of percepts.
     """
 
-    def __init__(self, action_map, environment, actions=None):
+    def __init__(self, action_map, environment, actions=None,
+                 random_state=None):
         super(TableDrivenAgent, self).__init__(environment=environment,
-                                               actions=actions)
+                                               actions=actions,
+                                               random_state=random_state)
         self.action_map = action_map
         self.percepts = ''
 

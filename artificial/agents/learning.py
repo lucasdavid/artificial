@@ -28,9 +28,11 @@ class LearningAgent(base.AgentBase):
 
     """
 
-    def __init__(self, environment, actions=None, model=None):
+    def __init__(self, environment, actions=None, model=None,
+                 random_state=None):
         super(LearningAgent, self).__init__(environment=environment,
-                                            actions=actions)
+                                            actions=actions,
+                                            random_state=random_state)
         self.model = model
 
     def act(self):

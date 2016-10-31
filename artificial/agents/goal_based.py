@@ -39,9 +39,10 @@ class GoalBasedAgent(predicting.PredictingAgent):
     """
 
     def __init__(self, search, environment, actions=None,
-                 search_params=None):
+                 search_params=None, random_state=None):
         super(GoalBasedAgent, self).__init__(
-            environment=environment, actions=actions)
+            environment=environment, actions=actions,
+            random_state=random_state)
 
         self.search = search(agent=self, **(search_params or {}))
         self.actions_to_perform = []

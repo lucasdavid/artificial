@@ -63,6 +63,12 @@ class Environment:
     def __del__(self):
         self.dispose()
 
+    @classmethod
+    def current(cls):
+        if cls.__instance is None:
+            raise RuntimeError('no %s is currently running', cls.__name__)
+        return cls.__instance
+
     @abc.abstractmethod
     def update(self):
         """Update the environment, should be overridden to reflect the changes

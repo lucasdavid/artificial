@@ -6,6 +6,7 @@
 import abc
 
 import six
+from sklearn.utils import check_random_state
 
 from ..base import Environment
 
@@ -27,7 +28,7 @@ class AgentBase:
 
     """
 
-    def __init__(self, environment, actions=None):
+    def __init__(self, environment, actions=None, random_state=None):
         if environment is not None and not isinstance(environment, Environment):
             raise ValueError('Illegal type (%s) for environment. It should '
                              'be an object of an Environment\'s subclass' %
@@ -36,6 +37,7 @@ class AgentBase:
         self.actions = actions
         self.last_state = None
         self.last_known_state = None
+        self.random_state = check_random_state(random_state)
 
     def perceive(self):
         """Perceive the environment and save current state."""

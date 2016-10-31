@@ -15,7 +15,9 @@ As you can see, there's a lot to do. Hold tight: this is going to take a while.
 Author: Lucas David -- <ld492@drexel.edu>
 License: MIT (c) 2016
 
+
 """
+
 import logging
 from time import time
 
@@ -64,21 +66,28 @@ def plot_decision_boundary(X, y, model, file_name=''):
 
 
 benchmarks = [
-    # Training on Digits.
     {
         'name': 'digits',
         'dataset': lambda: datasets.load_digits(),
         'nn_params': {
             'hidden_layer_sizes': (100,),
-            'random_state': np.random.RandomState(76), 'max_iter': 1},
+            'random_state': np.random.RandomState(76),
+            'max_iter': 1,
+        },
         'searches': [
-            {'population_size': 1000, 'debug': True,
-             'max_evolution_cycles': 10000, 'max_evolution_duration': 10 * 60,
-             'mutation_factor': .1, 'mutation_probability': .1,
-             'random_state': np.random.RandomState(82)}
+            {
+                'population_size': 1000, 'debug': True,
+                'max_evolution_cycles': 10000,
+                'max_evolution_duration': 10 * 60,
+                'mutation_factor': .1, 'mutation_probability': .1,
+                'random_state': np.random.RandomState(82),
+            },
         ],
-        'settings': {'pc_decomposing': True, 'whiten': False,
-                     'plotting': False}},
+        'settings': {
+            'pc_decomposing': True, 'whiten': False,
+            'plotting': False,
+        },
+    },
 ]
 
 
@@ -100,9 +109,9 @@ class TrainingCandidate(art.base.GeneticState):
 
         :math:`u(c) := -cost(c) = -(g(c) + h(c)) = -h(c)`
 
-        Hence, candidates with low associated heuristic. That means that
-        candidates with low heuristic cost are fitter than candidates with
-        higher heuristic cost.
+        Hence, candidates with low associated heuristic. In practical terms,
+        that means candidates with low heuristic cost are fitter than those
+        with higher heuristic cost.
 
         """
         return self.data.loss_
@@ -140,8 +149,10 @@ class TrainingCandidate(art.base.GeneticState):
             b_c = np.hstack((b_a[:, :cut], b_b[:, cut:]))
             b_c_.append(b_c)
 
-        return TrainingCandidate(NN(**World.params['nn_params'])
-                                 .custom_build(W_c_, b_c_))
+        net = MLPClassifier(**World.params['nn_params'])
+        net.coefs_, net.intercepts_ = W_c_, b_c_
+
+        return TrainingCandidate(net)
 
     def mutate(self, factor, probability):
         """Mutation Operator.

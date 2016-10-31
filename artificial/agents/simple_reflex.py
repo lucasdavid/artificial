@@ -15,9 +15,11 @@ class SimpleReflexAgent(base.AgentBase):
     Basic intelligent agent based on decision rules.
     """
 
-    def __init__(self, rules, environment, actions=None):
+    def __init__(self, rules, environment, actions=None,
+                 random_state=None):
         super(SimpleReflexAgent, self).__init__(environment=environment,
-                                                actions=actions)
+                                                actions=actions,
+                                                random_state=random_state)
         self.rules = rules
 
     def act(self):

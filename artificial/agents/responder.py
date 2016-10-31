@@ -10,10 +10,12 @@ class ResponderAgent(GoalBasedAgent):
 
     """
 
-    def __init__(self, search, environment, search_params=None):
+    def __init__(self, search, environment, search_params=None,
+                 random_state=None):
         super(ResponderAgent, self).__init__(
             search=search, environment=environment,
-            search_params=search_params, actions=None)
+            search_params=search_params, actions=None,
+            random_state=random_state)
 
     def act(self):
         """Answers the question."""
