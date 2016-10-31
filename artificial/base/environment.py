@@ -43,6 +43,12 @@ class Environment:
     __instance = None
     state_class_ = None
 
+    def current(self):
+        if self.__instance is None:
+            raise RuntimeError('no environment is currently instantiated')
+
+        return self.__instance
+
     def __init__(self, initial_state=None):
         self.current_state = self.initial_state = initial_state
         self.agents = []
