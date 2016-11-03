@@ -35,6 +35,9 @@ class EnvironmentTest(TestCase):
         self.assertIsNotNone(env)
         self.assertEqual(env.current_state, _S(10))
 
+        built = env.build()
+        self.assertEqual(env, built)
+
     def test_add_agents(self):
         env = _E(None)
         expected = ['A', 'B', 'C']
@@ -75,3 +78,12 @@ class EnvironmentTest(TestCase):
         env.live(n_cycles=expected_cycles)
         env.build.assert_any_call()
         env.update.assert_any_call()
+
+    def test_current(self):
+        env = _E()
+        self.assertEqual(env, _E.current())
+
+        env1 = _E()
+        env2 = _E()
+        self.assertNotEqual(env1, _E.current())
+        self.assertEqual(env2, _E.current())
