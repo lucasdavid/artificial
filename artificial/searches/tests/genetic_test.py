@@ -221,7 +221,8 @@ class GeneticAlgorithmTest(TestCase):
             min_genetic_similarity=expected_variability,
             population_size=50,
             mutation_probability=0,
-            random_state=self.random_state).search()
+            random_state=self.random_state,
+            debug=True).search()
 
         # Assert that the last population's variability is smaller
         # than the `min_genetic_similarity` parameter passed.

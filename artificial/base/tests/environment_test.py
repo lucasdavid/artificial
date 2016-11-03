@@ -80,10 +80,19 @@ class EnvironmentTest(TestCase):
         env.update.assert_any_call()
 
     def test_current(self):
+        if _E.current():
+            _E.current().dispose()
+
+        with self.assertRaises(RuntimeError):
+            _E.current()
+
         env = _E()
         self.assertEqual(env, _E.current())
 
         env1 = _E()
+        self.assertEqual(env1, _E.current())
         env2 = _E()
         self.assertNotEqual(env1, _E.current())
         self.assertEqual(env2, _E.current())
+
+        del env1, env2

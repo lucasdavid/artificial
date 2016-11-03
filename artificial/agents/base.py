@@ -12,7 +12,7 @@ from ..base import Environment
 
 
 @six.add_metaclass(abc.ABCMeta)
-class AgentBase:
+class AgentBase(object):
     """Agent Base Template.
 
     Defines a basic contract shared between all agents.
@@ -29,10 +29,6 @@ class AgentBase:
     """
 
     def __init__(self, environment, actions=None, random_state=None):
-        if environment is not None and not isinstance(environment, Environment):
-            raise ValueError('Illegal type (%s) for environment. It should '
-                             'be an object of an Environment\'s subclass' %
-                             type(environment))
         self.environment = environment
         self.actions = actions
         self.last_state = None

@@ -11,7 +11,7 @@ from artificial import agents
 
 
 @six.add_metaclass(abc.ABCMeta)
-class SearchBase:
+class SearchBase(object):
     """Search Base Template.
 
     Defines the basic contract shared between search algorithms,

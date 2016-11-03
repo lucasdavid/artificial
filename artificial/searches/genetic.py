@@ -286,8 +286,6 @@ class GeneticAlgorithm(SearchBase):
             except StopIteration:
                 # We're finished!
                 pass
-            except:
-                raise
             finally:
                 with self.manager.lock:
                     self.manager.offspring_ += group

@@ -3,9 +3,9 @@
 # Author: Lucas David -- <ld492@drexel.edu>
 # License: MIT (c) 2016
 
+import warnings
 from unittest import TestCase
 
-import warnings
 from artificial import base, agents
 from artificial.base import State
 from artificial.searches import fringe

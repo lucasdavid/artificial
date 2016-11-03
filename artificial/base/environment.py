@@ -12,7 +12,7 @@ logger = logging.getLogger('artificial')
 
 
 @six.add_metaclass(abc.ABCMeta)
-class Environment:
+class Environment(object):
     """Environment Base Class.
 
     Defines how agents and states intertwine, modeling a problem domain
@@ -40,13 +40,15 @@ class Environment:
 
     """
 
-    __instance = None
+    _instance = None
     state_class_ = None
 
     def __init__(self, initial_state=None):
         self.current_state = self.initial_state = initial_state
         self.agents = []
-        Environment.__instance = self
+
+        del Environment._instance
+        Environment._instance = self
 
     def build(self):
         """Build the environment, if necessary"""
@@ -56,7 +58,8 @@ class Environment:
         self.current_state = None
         self.agents = []
 
-        Environment.__instance = None
+        if self is Environment._instance:
+            Environment._instance = None
 
         return self
 
@@ -65,9 +68,10 @@ class Environment:
 
     @classmethod
     def current(cls):
-        if cls.__instance is None:
-            raise RuntimeError('no %s is currently running', cls.__name__)
-        return cls.__instance
+        if Environment._instance is None:
+            raise RuntimeError('no %s is not currently running'
+                               % Environment.__name__)
+        return Environment._instance
 
     @abc.abstractmethod
     def update(self):

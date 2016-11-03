@@ -9,7 +9,7 @@ import copy as copy_lib
 import six
 
 
-class State:
+class State(object):
     """State.
 
     Keeps track of episodic updates in the environment, maintaining
