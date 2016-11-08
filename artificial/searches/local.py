@@ -4,6 +4,7 @@
 # License: MIT (c) 2016
 
 import abc
+import logging
 import multiprocessing
 import threading
 
@@ -11,6 +12,8 @@ import six
 
 from . import base
 from .. import agents
+
+logger = logging.getLogger('artificial')
 
 
 @six.add_metaclass(abc.ABCMeta)
@@ -62,10 +65,12 @@ class HillClimbing(Local):
         strategy_is_classic = self.strategy == 'classic'
 
         current = self.root
-        it, limit = 0, self.restart_limit or 1
+        iteration, limit = 0, self.restart_limit or 1
+        utility = self.agent.utility
 
-        while it < limit:
-            it += 1
+        for iteration in range(limit):
+            logger.info('hill-climbing (attempt p#%i)', iteration)
+
             stalled = False
 
             if current is None:
@@ -76,7 +81,7 @@ class HillClimbing(Local):
                 stalled = True
 
                 for child in children:
-                    if self.agent.utility(child) > self.agent.utility(current):
+                    if utility(child) > utility(current):
                         current = child
                         stalled = False
 
@@ -84,9 +89,10 @@ class HillClimbing(Local):
                         # child that improves utility.
                         if strategy_is_classic: break
 
-            if (not self.solution_candidate_ or self.agent.utility(current) >
-                self.agent.utility(self.solution_candidate_)):
+            if (not self.solution_candidate_ or
+                utility(current) > utility(self.solution_candidate_)):
                 # We've just found a better solution!
+                logger.info('solution candidate found: %s', current)
                 self.solution_candidate_ = current
 
             # Force random restart.

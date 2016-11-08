@@ -93,7 +93,8 @@ class World(at.base.Environment):
 
     def update(self):
         for agent in self.agents:
-            solution = agent.act()
+            self.current_state = solution = agent.act()
+
             print('Bag: {%s}' % ', '.join(World.items_info_expanded[item][0]
                                           for item, in_the_bag
                                           in enumerate(solution.data)
@@ -103,30 +104,17 @@ class World(at.base.Environment):
                                      for i, is_in_the_bag
                                      in enumerate(solution.data)
                                      if is_in_the_bag))
-
-            # print('\n'.join(str(i.data)
-            #                 for i in env.agents[0].search.population_))
-
             print('Cycles: %i' % agent.search.cycle_)
             print('Variability: %f' % agent.search.variability_)
-
-
-class Hiker(at.agents.UtilityBasedAgent):
-    def act(self):
-        return (self.search
-                .search()
-                .solution_candidate_)
-
-    def predict(self, state):
-        raise RuntimeError('Sorry! I don\'t know how to predict states!')
 
 
 def main():
     print(__doc__)
 
     env = World(initial_state=Bag.random())
-    agent = Hiker(environment=env, search=searches.genetic.GeneticAlgorithm,
-                  search_params=search_params)
+    agent = at.agents.ResponderAgent(environment=env,
+                                     search=searches.genetic.GeneticAlgorithm,
+                                     search_params=search_params)
     env.agents = [agent]
 
     start = time.time()
@@ -139,21 +127,23 @@ def main():
         search = env.agents[0].search
 
         plt.subplot(1, 2, 1)
-        plt.plot(search.highest_utility_, linewidth=2, color='r')
-        plt.plot(search.average_utility_, linewidth=4,
-                 color='orange')
-        plt.plot(search.lowest_utility_, linewidth=2, color='y')
+        plt.plot(search.highest_utility_, color='r')
+        plt.plot(search.average_utility_, color='orange')
+        plt.plot(search.lowest_utility_, color='y')
         plt.ylabel('Generations utility')
         plt.title('Utility')
+        plt.grid()
 
         plt.subplot(1, 2, 2)
-        plt.plot(search.variability_, linewidth=4, color='orange')
+        plt.plot(search.generations_variability_, color='orange')
         plt.ylabel('Generations\' variability')
         plt.title('Variability')
 
+        plt.grid()
         plt.show()
 
-    except KeyboardInterrupt: print('canceled by user')
+    except KeyboardInterrupt:
+        print('canceled by user')
 
 
 if __name__ == '__main__':

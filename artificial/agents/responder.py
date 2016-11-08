@@ -1,7 +1,7 @@
-from .goal_based import GoalBasedAgent
+from .utility import UtilityBasedAgent
 
 
-class ResponderAgent(GoalBasedAgent):
+class ResponderAgent(UtilityBasedAgent):
     """Responder Agent.
 
     The Responder is a goal-based agent concerned with one (and only) thing:
