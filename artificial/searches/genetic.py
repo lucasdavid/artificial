@@ -334,7 +334,7 @@ class GeneticAlgorithm(SearchBase):
             self.started_at_ = self.n_jobs_ = None
 
         # Statistics.
-        self.generations_variability_ = self.average_utility_ = \
+        self.generations_variability_ = self.avg_utility_ = \
             self.highest_utility_ = self.lowest_utility_ = None
         self.variability_ = self.cycle_ = 0
 
@@ -364,9 +364,8 @@ class GeneticAlgorithm(SearchBase):
 
         while self.continue_evolving():
             self.cycle_ += 1
-            logger.info('cycle %i of %i', self.cycle_,
+            logger.info('cycle %i of %f.0', self.cycle_,
                         self.max_evolution_cycles)
-
             self.evolve()
         self.search_dispose()
         return self
@@ -468,11 +467,16 @@ class GeneticAlgorithm(SearchBase):
     def cycle_start(self):
         if self.debug:
             utilities = [self.agent.utility(i) for i in self.population_]
-            size = self.population_size_
 
-            self.average_utility_.append(sum(utilities) / size)
-            self.highest_utility_.append(max(utilities))
-            self.lowest_utility_.append(min(utilities))
+            _min, _avg, _max = (min(utilities),
+                                sum(utilities) / len(utilities),
+                                max(utilities))
+
+            self.lowest_utility_.append(_min)
+            self.average_utility_.append(_avg)
+            self.highest_utility_.append(_max)
+
+            logger.info('fitting: [%.2f, %.2f, %.2f]', _min, _avg, _max)
 
         return self
 

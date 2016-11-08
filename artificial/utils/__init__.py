@@ -4,3 +4,4 @@
 # License: MIT (c) 2016
 
 from .priority_queue import PriorityQueue
+from .timer import Timer

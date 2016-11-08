@@ -47,7 +47,6 @@ class Environment(object):
         self.current_state = self.initial_state = initial_state
         self.agents = []
 
-        del Environment._instance
         Environment._instance = self
 
     def build(self):
