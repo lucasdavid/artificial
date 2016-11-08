@@ -239,9 +239,10 @@ class World(art.base.Environment):
         best_i, best_model, best_score = -1, None, -np.inf
 
         for i, search_params in enumerate(params['searches']):
-            trainer = NNTrainer(art.searches.genetic.GeneticAlgorithm,
-                                self,
-                                search_params=search_params)
+            trainer = art.agents.ResponderAgent(
+                search=art.searches.genetic.GeneticAlgorithm,
+                environment=self,
+                search_params=search_params)
 
             # Ask agent to find a trained net for us.
             print('Genetic training has started. Parameters: \n%s'
@@ -302,10 +303,6 @@ class World(art.base.Environment):
         print('%s accuracy score: %.2f\n' % (label, score))
 
         return score
-
-
-class NNTrainer(art.agents.ResponderAgent, art.agents.UtilityBasedAgent):
-    """Trainer Agent"""
 
 
 def main():

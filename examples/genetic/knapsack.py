@@ -142,8 +142,7 @@ def main():
         plt.grid()
         plt.show()
 
-    except KeyboardInterrupt:
-        print('canceled by user')
+    except KeyboardInterrupt: print('canceled by user')
 
 
 if __name__ == '__main__':

@@ -56,16 +56,6 @@ class WordIndividual(art.base.GeneticState):
                                                size=len(World.expected))))
 
 
-class Speller(art.agents.UtilityBasedAgent):
-    def act(self):
-        return (self.search
-                .search()
-                .solution_candidate_)
-
-    def predict(self, state):
-        raise RuntimeError('Sorry! I don\'t know how to predict states!')
-
-
 class World(art.base.Environment):
     state_class_ = WordIndividual
 
@@ -84,18 +74,16 @@ def main():
     print(__doc__)
 
     env = World(initial_state=WordIndividual.random())
-    agent = Speller(environment=env,
-                    search=art.searches.genetic.GeneticAlgorithm,
-                    search_params=search_params)
-    env.agents = [agent]
+    env.agents = [
+        art.agents.ResponderAgent(environment=env,
+                                  search=art.searches.genetic.GeneticAlgorithm,
+                                  search_params=search_params)
+    ]
     start = time.time()
 
-    try:
-        env.update()
-    except KeyboardInterrupt:
-        pass
-    finally:
-        print('\nTime elapsed: %.2f s' % (time.time() - start))
+    try: env.update()
+    except KeyboardInterrupt: print('canceled by user')
+    finally: print('\ntime elapsed: %.2f s' % (time.time() - start))
 
 
 if __name__ == '__main__':

@@ -364,14 +364,9 @@ class GeneticAlgorithm(SearchBase):
 
         while self.continue_evolving():
             self.cycle_ += 1
+            logger.info('cycle %i of %i', self.cycle_,
+                        self.max_evolution_cycles)
 
-            if self.max_evolution_cycles < np.inf:
-                progress = 100 * self.cycle_ // self.max_evolution_cycles
-
-                if progress % 10 == 0:
-                    logger.info('cycle %i of %i (%i%%)',
-                                self.cycle_, self.max_evolution_cycles,
-                                progress)
             self.evolve()
         self.search_dispose()
         return self
