@@ -212,9 +212,9 @@ class ExperimentSet(object):
                     gc.collect()
                 except KeyboardInterrupt:
                     logger.warning('experiment interrupted by user')
-                # except Exception as e:
-                #     logger.error('an error was raised (%s): %s',
-                #                  e.__class__.__name__, e)
+                except Exception as e:
+                    logger.error('an error was raised (%s): %s',
+                                 e.__class__.__name__, e)
         except KeyboardInterrupt:
             logger.warning('experiment set interrupted by user')
         finally:
