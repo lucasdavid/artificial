@@ -198,11 +198,12 @@ class ExperimentSet(object):
             for i, e in enumerate(self):
                 try:
                     with e:
+                        e.setup()
+
                         logger.info('Experiment #%i: %s (%s)',
                                     i, e.consts.code_name, e.started_at)
                         logger.info('constants: %s', e.consts)
 
-                        e.setup()
                         e.run()
                         e.teardown()
                     logger.info('experiment completed (%s)\n'
