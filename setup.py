@@ -13,6 +13,6 @@ setup(
 
     url='https://github.com/lucasdavid/artificial',
     download_url='https://github.com/lucasdavid/artificial/archive/master.zip',
-    install_requires=['six', 'numpy', 'scipy', 'scikit-learn'],
+    install_requires=['six', 'numpy', 'scipy', 'scikit-learn', 'jsmin'],
     tests_require=open('docs/requirements-dev.txt').readlines(),
 )

@@ -7,7 +7,7 @@ Licence: MIT License 2016 (c)
 """
 import argparse
 import gc
-import json
+from jsmin import jsmin
 import logging
 from datetime import datetime
 
@@ -137,7 +137,7 @@ class ExperimentSet(object):
 
         try:
             with open(filename) as f:
-                data = json.load(f)
+                data = jsmin(f.read())
         except IOError:
             if raise_on_not_found:
                 raise
