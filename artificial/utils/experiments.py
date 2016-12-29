@@ -137,7 +137,7 @@ class ExperimentSet(object):
 
         try:
             with open(filename) as f:
-                data = jsmin(f.read())
+                data = jsmin(f)
         except IOError:
             if raise_on_not_found:
                 raise
