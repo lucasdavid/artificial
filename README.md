@@ -1,6 +1,6 @@
 # Artificial
 
-[![Build Status](https://github.com/lucasdavid/artificial/actions/workflows/python-app.yml/badge.svg)
+![Build Status](https://github.com/lucasdavid/artificial/actions/workflows/python-app.yml/badge.svg)
 
 A basic API for intelligent agents.
 
