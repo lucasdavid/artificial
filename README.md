@@ -2,7 +2,7 @@
 
 ![Build Status](https://github.com/lucasdavid/artificial/actions/workflows/python-app.yml/badge.svg)
 
-A basic API for intelligent agents.
+A basic API for artificial intelligent agents described in the book "Artificial Intelligence: A Modern Approach", by Russell and Norvig.
 
 ## Introduction
 
