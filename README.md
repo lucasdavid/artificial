@@ -1,7 +1,6 @@
 # Artificial
 
-[![Build Status](https://travis-ci.org/lucasdavid/artificial.svg?branch=master)](https://travis-ci.org/lucasdavid/artificial)
-[![Coverage Status](https://coveralls.io/repos/github/lucasdavid/artificial/badge.svg?branch=master)](https://coveralls.io/github/lucasdavid/artificial?branch=master)
+[![Build Status](https://github.com/lucasdavid/artificial/actions/workflows/python-app.yml/badge.svg)
 
 A basic API for intelligent agents.
 
